@@ -8,3 +8,5 @@ coverage/
 !.env.example
 
 /src/generated/prisma
+__pycache__/
+*.pyc

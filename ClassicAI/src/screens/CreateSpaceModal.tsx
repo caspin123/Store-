@@ -34,8 +34,7 @@ export function CreateSpaceModal() {
     try {
       const space = createSpace(name.trim(), instructions.trim());
       showToast('تم إنشاء المساحة', 'success');
-      navigation.goBack();
-      (navigation as any).navigate('SpaceChat', { spaceId: space.id });
+      (navigation as any).replace('SpaceChat', { spaceId: space.id });
     } finally {
       setCreating(false);
     }

@@ -8,8 +8,7 @@ import {
   Switch,
   SafeAreaView,
 } from 'react-native';
-import { DrawerContentScrollView } from '@react-navigation/drawer';
-import { DrawerActions, useNavigation } from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useApp } from '../providers/AppProvider';
 import { Colors, FontSize, Spacing, BorderRadius, FontWeight } from '../constants/theme';
@@ -17,8 +16,8 @@ import { ProviderID } from '../types';
 import { PROVIDER_NAMES } from '../constants/providers';
 
 export function SidebarDrawer(props: any) {
-  const navigation = useNavigation();
-  const { state, startNewChat, setCurrentChat, updateSettings, toggleThinking, toggleSearch, setCurrentSpace } = useApp();
+  const navigation = useNavigation<any>();
+  const { state, startNewChat, updateSettings, toggleThinking, toggleSearch, setCurrentSpace } = useApp();
   const { settings, chats, spaces } = state;
 
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
@@ -27,38 +26,37 @@ export function SidebarDrawer(props: any) {
     setExpandedSection(prev => (prev === key ? null : key));
   };
 
+  const rootNav = navigation.getParent() ?? navigation;
+
   const handleNewChat = () => {
     startNewChat();
-    setCurrentChat(null);
-    navigation.dispatch(DrawerActions.closeDrawer());
-    (navigation as any).navigate('Chat');
+    navigation.closeDrawer();
   };
 
   const handleOpenSpace = (spaceId: string) => {
     setCurrentSpace(spaceId);
-    navigation.dispatch(DrawerActions.closeDrawer());
-    (navigation as any).navigate('SpaceChat', { spaceId });
+    navigation.closeDrawer();
+    rootNav.navigate('SpaceChat', { spaceId });
   };
 
   const handleCreateSpace = () => {
-    navigation.dispatch(DrawerActions.closeDrawer());
-    (navigation as any).navigate('CreateSpace');
+    navigation.closeDrawer();
+    rootNav.navigate('CreateSpace');
   };
 
   const handleOpenSettings = () => {
-    navigation.dispatch(DrawerActions.closeDrawer());
-    (navigation as any).navigate('Settings');
+    navigation.closeDrawer();
+    rootNav.navigate('Settings');
   };
 
   const handleOpenApiKeys = () => {
-    navigation.dispatch(DrawerActions.closeDrawer());
-    (navigation as any).navigate('ApiKeys');
+    navigation.closeDrawer();
+    rootNav.navigate('ApiKeys');
   };
 
   const handleSelectChat = (chatId: string) => {
-    setCurrentChat(chatId);
-    navigation.dispatch(DrawerActions.closeDrawer());
-    (navigation as any).navigate('Chat');
+    navigation.closeDrawer();
+    rootNav.navigate('Chat', { chatId });
   };
 
   const SectionHeader = ({ label, sectionKey, icon }: { label: string; sectionKey: string; icon: string }) => (

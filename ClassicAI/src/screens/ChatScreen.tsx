@@ -14,6 +14,7 @@ import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useApp } from '../providers/AppProvider';
 import { useChat } from '../hooks/useChat';
+import { useToast } from '../components/Toast';
 import { MessageBubble } from '../components/MessageBubble';
 import { ChatInput } from '../components/ChatInput';
 import { ThinkingStatus } from '../components/ThinkingStatus';
@@ -28,6 +29,7 @@ interface Props {
 export function ChatScreen({ chatId, spaceId }: Props) {
   const navigation = useNavigation<DrawerNavigationProp<any>>();
   const { state, startNewChat, sendMessage, editAndResend, stopGeneration } = useApp();
+  const { show: showToast } = useToast();
   const flatListRef = useRef<FlatList>(null);
 
   const activeChatId = chatId ?? state.currentChatId ?? undefined;
@@ -47,10 +49,19 @@ export function ChatScreen({ chatId, spaceId }: Props) {
   }, [messages.length]);
 
   const handleSend = useCallback(
-    (content: string) => {
-      send(content);
+    async (content: string) => {
+      try {
+        await send(content);
+      } catch (err: any) {
+        const msg = err?.message ?? '';
+        if (msg.includes('No API key') || msg.includes('api key') || msg.includes('API key')) {
+          showToast('يرجى إضافة API Key من الإعدادات أولاً', 'error');
+        } else {
+          showToast(msg || 'حدث خطأ، حاول مرة أخرى', 'error');
+        }
+      }
     },
-    [send],
+    [send, showToast],
   );
 
   const handleRegenerate = useCallback(() => {

@@ -19,6 +19,11 @@ import { Colors } from './src/constants/theme';
 const Drawer = createDrawerNavigator();
 const Stack = createStackNavigator();
 
+function ChatWithParams({ route }: any) {
+  const chatId = route?.params?.chatId;
+  return <ChatScreen chatId={chatId} />;
+}
+
 function DrawerNavigator() {
   return (
     <Drawer.Navigator
@@ -33,7 +38,7 @@ function DrawerNavigator() {
         overlayColor: 'rgba(0,0,0,0.5)',
       }}
     >
-      <Drawer.Screen name="Chat" component={ChatScreen} />
+      <Drawer.Screen name="Chat" component={ChatWithParams} />
     </Drawer.Navigator>
   );
 }

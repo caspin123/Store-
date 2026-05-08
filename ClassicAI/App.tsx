@@ -11,6 +11,7 @@ import { ChatScreen } from './src/screens/ChatScreen';
 import { SettingsScreen } from './src/screens/SettingsScreen';
 import { ApiKeysScreen } from './src/screens/ApiKeysScreen';
 import { CreateSpaceModal } from './src/screens/CreateSpaceModal';
+import { SpaceListScreen } from './src/screens/SpaceListScreen';
 import { SpaceChatScreen } from './src/screens/SpaceChatScreen';
 import { SpaceDetailsScreen } from './src/screens/SpaceDetailsScreen';
 import { Colors } from './src/constants/theme';
@@ -49,6 +50,7 @@ function RootNavigator() {
       <Stack.Screen name="Main" component={DrawerNavigator} />
       <Stack.Screen name="Settings" component={SettingsScreen} />
       <Stack.Screen name="ApiKeys" component={ApiKeysScreen} />
+      <Stack.Screen name="SpaceList" component={SpaceListScreen} />
       <Stack.Screen
         name="CreateSpace"
         component={CreateSpaceModal}

@@ -5,8 +5,8 @@ import {
   StyleSheet,
   TouchableOpacity,
   ScrollView,
-  Clipboard,
 } from 'react-native';
+import * as Clipboard from 'expo-clipboard';
 import Markdown from 'react-native-markdown-display';
 import { Colors, FontSize, Spacing, BorderRadius, FontWeight } from '../constants/theme';
 
@@ -17,7 +17,7 @@ interface Props {
 
 function CodeBlock({ children, language }: { children: string; language?: string }) {
   const handleCopy = useCallback(() => {
-    Clipboard.setString(children);
+    Clipboard.setStringAsync(children);
   }, [children]);
 
   return (

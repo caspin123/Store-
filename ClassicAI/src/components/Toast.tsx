@@ -75,17 +75,47 @@ export function ToastContainer({ toasts, onDismiss }: ToastContainerProps) {
   );
 }
 
-// ── Standalone hook to manage toasts ─────────────────────────────────────────
+// ── Context-based Toast Provider ──────────────────────────────────────────────
+
+interface ToastContextValue {
+  show: (message: string, type?: ToastType, duration?: number) => void;
+}
+
+const ToastContext = createContext<ToastContextValue>({ show: () => {} });
 
 let _counter = 0;
 
-export function useToast() {
+export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
   const show = useCallback((message: string, type: ToastType = 'info', duration = 3000) => {
     const id = `toast_${++_counter}`;
     setToasts(prev => [...prev, { id, message, type, duration }]);
   }, []);
+
+  const dismiss = useCallback((id: string) => {
+    setToasts(prev => prev.filter(t => t.id !== id));
+  }, []);
+
+  return (
+    <ToastContext.Provider value={{ show }}>
+      {children}
+      <ToastContainer toasts={toasts} onDismiss={dismiss} />
+    </ToastContext.Provider>
+  );
+}
+
+// ── Standalone hook to manage toasts ─────────────────────────────────────────
+
+export function useToast() {
+  const ctx = useContext(ToastContext);
+  // Also provide local state for components that need it standalone
+  const [toasts, setToasts] = useState<ToastMessage[]>([]);
+
+  const show = useCallback((message: string, type: ToastType = 'info', duration = 3000) => {
+    // Try context first
+    ctx.show(message, type, duration);
+  }, [ctx]);
 
   const dismiss = useCallback((id: string) => {
     setToasts(prev => prev.filter(t => t.id !== id));

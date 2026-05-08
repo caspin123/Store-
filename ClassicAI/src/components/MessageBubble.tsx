@@ -5,9 +5,8 @@ import {
   StyleSheet,
   TouchableOpacity,
   TextInput,
-  Clipboard,
-  Alert,
 } from 'react-native';
+import * as Clipboard from 'expo-clipboard';
 import { Ionicons } from '@expo/vector-icons';
 import { Message } from '../types';
 import { Colors, Spacing, BorderRadius, FontSize, FontWeight } from '../constants/theme';
@@ -15,21 +14,24 @@ import { MarkdownRenderer } from './MarkdownRenderer';
 
 interface Props {
   message: Message;
-  onRegenerate?: () => void;
+  onRegenerate?: ((messageId?: string) => void) | (() => void);
   onEdit?: (messageId: string, newContent: string) => void;
+  onCopy?: (text: string) => void;
   isLast?: boolean;
+  isGenerating?: boolean;
 }
 
-export function MessageBubble({ message, onRegenerate, onEdit, isLast }: Props) {
+export function MessageBubble({ message, onRegenerate, onEdit, onCopy, isLast, isGenerating }: Props) {
   const [isEditing, setIsEditing] = useState(false);
   const [editText, setEditText] = useState(message.content);
   const [showActions, setShowActions] = useState(false);
 
   const isUser = message.role === 'user';
 
-  const handleCopy = useCallback(() => {
-    Clipboard.setString(message.content);
-  }, [message.content]);
+  const handleCopy = useCallback(async () => {
+    await Clipboard.setStringAsync(message.content);
+    onCopy?.(message.content);
+  }, [message.content, onCopy]);
 
   const handleEditStart = useCallback(() => {
     setEditText(message.content);
@@ -111,7 +113,7 @@ export function MessageBubble({ message, onRegenerate, onEdit, isLast }: Props) 
         <View style={styles.aiActions}>
           <ActionButton icon="copy-outline" label="Copy" onPress={handleCopy} />
           {onRegenerate && isLast && (
-            <ActionButton icon="refresh-outline" label="Regenerate" onPress={onRegenerate} />
+            <ActionButton icon="refresh-outline" label="Regenerate" onPress={() => (onRegenerate as any)(message.id)} />
           )}
         </View>
       )}

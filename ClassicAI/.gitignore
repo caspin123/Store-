@@ -1,0 +1,23 @@
+# Dependencies
+node_modules/
+
+# Expo
+.expo/
+dist/
+
+# Android build outputs
+android/app/build/
+android/.gradle/
+android/build/
+
+# iOS
+ios/build/
+*.xcworkspace/xcuserdata/
+
+# Environment
+.env
+.env.local
+
+# OS
+.DS_Store
+*.log

@@ -191,30 +191,43 @@ def check_animation_frames():
             continue
 
         match = re.search(r"public int frameCount\(\) \{\s*return (\d+);", source)
-        prop = re.search(r'IntegerProperty\.create\("([a-z]+)", 0, (\d+)\)', source)
-        if not match or not prop:
-            failures.append(f"{name}: could not read frame count or property")
+        properties = dict((n, int(hi) + 1) for n, hi
+                          in re.findall(r'IntegerProperty\.create\("([a-z]+)", 0, (\d+)\)', source))
+        if not match or not properties:
+            failures.append(f"{name}: could not read frame count or properties")
             continue
 
         checked += 1
         frames = int(match.group(1))
         block = name[:-len("Block.java")].lower()
 
-        if int(prop.group(2)) != frames - 1:
-            failures.append(f"{name}: property range 0..{prop.group(2)} does not match "
-                            f"frameCount {frames}")
+        # A connected component has a second property selecting which piece of a tiled run it
+        # draws, and then needs a model for every frame and piece combination.
+        connected = "ConnectedComponent" in source
+        pieces = 1
+        if connected:
+            extra = [count for prop, count in properties.items()
+                     if count != frames or len(properties) == 1]
+            pieces = extra[0] if extra else 1
+            for prop, count in properties.items():
+                if count != frames:
+                    pieces = count
+                    break
+
         for frame in range(frames):
-            model = os.path.join(ASSETS, "models", "block", f"{block}_{frame}.json")
-            if not os.path.exists(model):
-                failures.append(f"{block}: model for frame {frame} is missing")
+            for piece in range(pieces):
+                suffix = f"{frame}" if not connected else f"{frame}_{piece}"
+                model = os.path.join(ASSETS, "models", "block", f"{block}_{suffix}.json")
+                if not os.path.exists(model):
+                    failures.append(f"{block}: model {block}_{suffix} is missing")
 
         blockstate = os.path.join(ASSETS, "blockstates", f"{block}.json")
         if os.path.exists(blockstate):
             variants = read_json(blockstate).get("variants", {})
-            expected = 4 * frames
+            expected = 4 * frames * pieces
             if len(variants) != expected:
                 failures.append(f"{block}.json has {len(variants)} variants, expected {expected} "
-                                f"(4 facings x {frames} frames)")
+                                f"(4 facings x {frames} frames x {pieces} piece(s))")
     report(f"Animation frames ({checked} animated blocks)", failures)
 
 

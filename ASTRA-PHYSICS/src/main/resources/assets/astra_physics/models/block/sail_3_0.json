@@ -1,0 +1,81 @@
+{
+  "ambientocclusion": true,
+  "textures": {
+    "particle": "astra_physics:block/metal_dark",
+    "dark": "astra_physics:block/metal_dark",
+    "metal": "astra_physics:block/metal_plate",
+    "brass": "astra_physics:block/brass",
+    "wood": "astra_physics:block/wood",
+    "cloth": "astra_physics:block/cloth",
+    "cyan": "astra_physics:block/cyan_core",
+    "grid": "astra_physics:block/cyan_grid",
+    "thrust": "astra_physics:block/thruster_face",
+    "black": "astra_physics:block/black_iron"
+  },
+  "elements": [
+    {
+      "from": [
+        0.0,
+        0,
+        7.05
+      ],
+      "to": [
+        16,
+        16,
+        8.05
+      ],
+      "faces": {
+        "down": {
+          "texture": "#cloth"
+        },
+        "up": {
+          "texture": "#cloth"
+        },
+        "north": {
+          "texture": "#cloth"
+        },
+        "south": {
+          "texture": "#cloth"
+        },
+        "west": {
+          "texture": "#cloth"
+        },
+        "east": {
+          "texture": "#cloth"
+        }
+      }
+    },
+    {
+      "from": [
+        0.0,
+        0.4,
+        6.8
+      ],
+      "to": [
+        16,
+        1.5,
+        8.3
+      ],
+      "faces": {
+        "down": {
+          "texture": "#wood"
+        },
+        "up": {
+          "texture": "#wood"
+        },
+        "north": {
+          "texture": "#wood"
+        },
+        "south": {
+          "texture": "#wood"
+        },
+        "west": {
+          "texture": "#wood"
+        },
+        "east": {
+          "texture": "#wood"
+        }
+      }
+    }
+  ]
+}

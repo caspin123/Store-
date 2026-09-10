@@ -57,7 +57,7 @@ public final class AstraConfig {
 
     public double maxMarineSpeed = 0.30;
     public double maxSailSpeed = 0.17;
-    public double maxAircraftSpeed = 0.68;
+    public double maxAircraftSpeed = 0.38;
     public double maxVerticalSpeed = 0.42;
     /** Speed limit for a construct with no working propulsion. */
     public double maxDriftSpeed = 0.24;

@@ -38,8 +38,29 @@ are now climb and dive. Those keys used to be how a pilot let go of the wheel, w
 an aircraft, so leaving the helm moved to a dedicated key (G by default) — right-clicking the wheel
 still works too.
 
+### Wings and sails are built, not fixed
+
+A wing used to be a whole wing crammed into one block, and a sail a whole rig — so the only wing
+you could have was the size the model happened to be, which is why they looked stubby. Both are
+now sections that tile: place several wings in a row and they draw as one continuous wing with a
+mount at the hull and a winglet at the tip; place a block of sails and they form a sheet with a
+mast down the leading column. The player decides the size, and the physics already scales with
+the count.
+
+Connections are worked out by the renderer from the hull's own block list, because construct
+blocks are not world blocks and so have no neighbour updates to hook. Each panel's animation frame
+is offset by its position, so the billow travels across a large sail rather than the whole sheet
+pulsing at once.
+
 ### Fixed
 
+- **Propellers spun and engines smoked with no engine block on the hull.** Engine power is stored
+  on the construct and defaults to 50%, and the animation tested only that, while the physics
+  correctly also required an engine block. A construct with no engine now reads as off everywhere.
+- **Aircraft flew absurdly fast.** The target speed formula asked for 0.65 blocks per tick against
+  a cap of 0.68, so a plane simply pinned itself at the limit. Target and cap now agree at 0.38
+  (7.6 blocks per second, close to a minecart), and acceleration is halved so cruise takes a
+  couple of seconds to reach rather than one.
 - **Piloting shook constantly.** The ship is drawn interpolated between two network snapshots, but
   the pilot was placed on the newest snapshot outright, so the deck they saw and the spot they
   stood on disagreed by up to a tick of travel, every tick. The camera now interpolates along

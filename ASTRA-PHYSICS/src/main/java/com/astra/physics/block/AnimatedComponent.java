@@ -52,6 +52,17 @@ public interface AnimatedComponent {
         return enginePower;
     }
 
+    /**
+     * Frame offset for a block at a given local position.
+     *
+     * <p>A tiled component covering many blocks would otherwise pulse as one flat sheet. Shifting
+     * each block a frame along its position turns the same loop into a wave crossing the surface,
+     * at no extra cost.
+     */
+    default int phaseOffset(int localX, int localY, int localZ) {
+        return 0;
+    }
+
     enum Drive {
         CYCLE,
         CYCLE_FROM_ONE,

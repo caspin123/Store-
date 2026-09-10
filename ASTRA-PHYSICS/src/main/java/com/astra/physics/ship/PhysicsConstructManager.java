@@ -74,6 +74,8 @@ public final class PhysicsConstructManager {
     private static final double STAND_ABOVE_TOLERANCE = 0.75;
     /** Autosave interval in ticks. Ten minutes, matching vanilla's own autosave cadence. */
     private static final long AUTOSAVE_INTERVAL_TICKS = 12_000L;
+    /** How often a pilot's instrument readout refreshes, in ticks. */
+    private static final long PILOT_READOUT_INTERVAL = 5L;
 
     private PhysicsConstructManager() {}
 
@@ -739,7 +741,7 @@ public final class PhysicsConstructManager {
     private static ConstructStatePayload statePayloadFor(PhysicsConstruct construct) {
         return new ConstructStatePayload(
                 construct.id(),
-                construct.enginePowerStep(),
+                construct.effectivePowerStep(),
                 construct.engineMode() == PhysicsConstruct.EngineMode.AIRCRAFT,
                 construct.netThrottle(),
                 construct.netSteer());
@@ -787,7 +789,45 @@ public final class PhysicsConstructManager {
             return false;
         }
         anchorPilot(player, construct);
+        sendPilotReadout(player, construct);
         return true;
+    }
+
+    /**
+     * Live instruments for whoever is at the wheel.
+     *
+     * <p>A pilot otherwise has no way to tell how fast they are going, which way the hull is
+     * pointing, or whether the engine is even running — all of which decide whether the craft
+     * will turn or climb. It goes to the action bar rather than a custom HUD so it costs no new
+     * rendering and shows up identically on desktop and on touch controls.
+     */
+    private static void sendPilotReadout(ServerPlayer player, PhysicsConstruct construct) {
+        if (player.level().getGameTime() % PILOT_READOUT_INTERVAL != 0L) {
+            return;
+        }
+
+        double speed = Math.sqrt(construct.vx() * construct.vx() + construct.vz() * construct.vz());
+        double climb = construct.vy();
+
+        Component power = construct.enginesEnabled()
+                ? Component.literal(construct.enginePowerPercent() + "%")
+                : AstraText.plain("engine.off");
+
+        AstraText.sendActionBar(player, AstraText.info("helm.readout",
+                String.format(java.util.Locale.ROOT, "%.1f", speed * 20.0),
+                String.format(java.util.Locale.ROOT, "%+.1f", climb * 20.0),
+                String.format(java.util.Locale.ROOT, "%.0f", construct.y()),
+                compass(construct.yaw()),
+                power,
+                modeLabel(construct.engineMode())));
+    }
+
+    /** Eight-point compass name for a heading, so a pilot can hold a course. */
+    private static String compass(double yaw) {
+        String[] points = {"N", "NE", "E", "SE", "S", "SW", "W", "NW"};
+        // Local forward is +Z, which is south in world terms, so the table starts there.
+        int index = (int) Math.floor(((yaw + 180.0) % 360.0 + 360.0) % 360.0 / 45.0 + 0.5) % 8;
+        return points[index];
     }
 
     /**

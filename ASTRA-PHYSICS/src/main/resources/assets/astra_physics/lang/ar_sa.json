@@ -42,6 +42,7 @@
   "message.astra_physics.drive.none": "بدون دفع",
   "message.astra_physics.helm.engaged": "أنت على الدفة مع %s. W و S للسرعة، A و D لتدوير السفينة، قفز وتسلل للصعود والنزول، G للترك.",
   "message.astra_physics.helm.released": "تم ترك الدفة. عاد المشي طبيعياً.",
+  "message.astra_physics.helm.readout": "%s م/ث  ·  صعود %s  ·  ارتفاع %s  ·  اتجاه %s  ·  محرك %s %s",
   "message.astra_physics.helm.occupied": "يوجد قائد آخر على هذه الدفة.",
   "message.astra_physics.interact.data_only": "بيانات البلوك محفوظة (%s)، لكن هذا النوع ليس له واجهة محلية بعد.",
   "message.astra_physics.container.title": "على المتن: %s",

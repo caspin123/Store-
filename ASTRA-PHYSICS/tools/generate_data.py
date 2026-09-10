@@ -84,6 +84,8 @@ ENGLISH = {
     "message.astra_physics.helm.engaged":
         "At the helm with %s. W and S drive, A and D turn the ship, jump and sneak climb and dive, G lets go.",
     "message.astra_physics.helm.released": "Helm released. Walking restored.",
+    "message.astra_physics.helm.readout":
+        "%s m/s  ·  climb %s  ·  alt %s  ·  heading %s  ·  engine %s %s",
     "message.astra_physics.helm.occupied": "Another pilot is already at this helm.",
 
     "message.astra_physics.interact.data_only":
@@ -177,6 +179,8 @@ ARABIC = {
     "message.astra_physics.helm.engaged":
         "أنت على الدفة مع %s. W و S للسرعة، A و D لتدوير السفينة، قفز وتسلل للصعود والنزول، G للترك.",
     "message.astra_physics.helm.released": "تم ترك الدفة. عاد المشي طبيعياً.",
+    "message.astra_physics.helm.readout":
+        "%s م/ث  ·  صعود %s  ·  ارتفاع %s  ·  اتجاه %s  ·  محرك %s %s",
     "message.astra_physics.helm.occupied": "يوجد قائد آخر على هذه الدفة.",
 
     "message.astra_physics.interact.data_only":

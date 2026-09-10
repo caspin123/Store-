@@ -81,70 +81,43 @@ def helm_frame(angle):
 # --------------------------------------------------------------------- sail
 
 SAIL_FRAMES = 4
-SAIL_BANDS = 8
-SAIL_BOTTOM = 7.5
-SAIL_TOP = 29.5
-SAIL_LUFF = 9.0        # the edge against the mast
-SAIL_FOOT_LEECH = 27.0  # trailing edge at the boom
-SAIL_HEAD_LEECH = 19.0  # trailing edge at the head, giving the sail its taper
+# Billow amplitude is kept under half the cloth thickness so neighbouring panels, which sit
+# one frame apart in the travelling wave, always overlap instead of tearing open.
+SAIL_BILLOW = 0.45
+SAIL_CLOTH_THICKNESS = 1.0
 
 
-def sail_frame(frame):
-    """A gaff rig whose canvas bellies in a wave travelling up the sail.
+def sail_frame(frame, mast):
+    """One panel of canvas that tiles with its neighbours in every direction.
 
-    The sail is one continuous stack of bands rather than separate panels. An earlier
-    version left a two unit hole in the middle of the canvas and hung its spars
-    inconsistently - some below their panel, some above it - which is what made the
-    rig look broken. Bands overlap slightly in Y so no seam can open up, and the
-    billow shifts only a little from one band to the next so the surface reads as
-    curved cloth instead of a stack of loose slabs.
+    A sail used to be a whole fixed rig in a single block, so the only sail you could have was
+    the size this model happened to be. Now it is one panel: place a block of them and the
+    player decides how big the sail is. The mast is drawn only on the leading column, so a tall
+    sail gets a full height pole without every panel carrying its own.
     """
     phase = frame / SAIL_FRAMES * math.tau
-    band_height = (SAIL_TOP - SAIL_BOTTOM) / SAIL_BANDS
+    belly = math.sin(phase) * SAIL_BILLOW
+    centre = 8.0 + belly
+    half = SAIL_CLOTH_THICKNESS / 2.0
+
+    # Cloth starts clear of the mast when there is one, and fills the cell when there is not,
+    # so panels butt up against each other with no seam.
+    cloth_start = 3.5 if mast else 0.0
 
     elements = [
-        # mast step and mast
-        box((5, 0, 5), (11, 3.5, 11), "dark"),
-        box((5.8, 3.5, 5.8), (10.2, 5.5, 10.2), "brass"),
-        box((7, 4, 7), (9, 32, 9), "wood"),
-        box((6.5, 5.5, 6.5), (9.5, 8.0, 9.5), "brass"),
-        box((6.5, 18.0, 6.5), (9.5, 20.0, 9.5), "brass"),
-        box((6.5, 29.0, 6.5), (9.5, 31.0, 9.5), "brass"),
-        box((7.2, 1.6, 4.6), (8.8, 3.4, 5.2), "cyan", shade=False),
+        box((cloth_start, 0, centre - half), (16, 16, centre + half), "cloth"),
+        # a batten along the foot of the panel stiffens the run and catches the light
+        box((cloth_start, 0.4, centre - half - 0.25),
+            (16, 1.5, centre + half + 0.25), "wood"),
     ]
 
-    def leech_at(height):
-        """Trailing edge X at a given height, tapering from foot to head."""
-        t = (height - SAIL_BOTTOM) / (SAIL_TOP - SAIL_BOTTOM)
-        return SAIL_FOOT_LEECH + (SAIL_HEAD_LEECH - SAIL_FOOT_LEECH) * t
-
-    def belly_at(band):
-        """How far the canvas bows out of the mast plane, as a wave up the sail."""
-        return math.sin(phase + band * 0.45) * 1.15
-
-    # boom and gaff, following the canvas they carry
-    boom_centre = 8.0 + belly_at(0) * 0.35
-    head_centre = 8.0 + belly_at(SAIL_BANDS - 1) * 0.35
-    elements.append(box((8, SAIL_BOTTOM - 1.9, boom_centre - 0.9),
-                        (SAIL_FOOT_LEECH + 0.8, SAIL_BOTTOM - 0.1, boom_centre + 0.9), "wood"))
-    elements.append(box((8, SAIL_TOP + 0.1, head_centre - 0.9),
-                        (SAIL_HEAD_LEECH + 0.8, SAIL_TOP + 1.9, head_centre + 0.9), "wood"))
-
-    for band in range(SAIL_BANDS):
-        y0 = SAIL_BOTTOM + band * band_height
-        # Bands overlap so a seam can never open between them.
-        y1 = y0 + band_height + 0.12
-        centre = 8.0 + belly_at(band)
-        outer = leech_at(y1)
-
-        elements.append(box((SAIL_LUFF, y0, centre - 0.5), (outer, y1, centre + 0.5), "cloth"))
-        # leech rope down the trailing edge, riding the same curve
-        elements.append(box((outer - 0.8, y0, centre - 0.65),
-                            (outer + 0.6, y1, centre + 0.65), "wood"))
-        # a batten every other band stiffens the cloth and catches the light
-        if band % 2 == 1:
-            elements.append(box((SAIL_LUFF + 0.4, y0 + band_height * 0.45, centre - 0.7),
-                                (outer - 0.6, y0 + band_height * 0.45 + 0.7, centre + 0.7), "brass"))
+    if mast:
+        elements.append(box((0.5, 0, 5.5), (3.5, 16, 10.5), "wood"))
+        elements.append(box((0.2, 2, 5.2), (3.8, 3.5, 10.8), "brass"))
+        elements.append(box((0.2, 12.5, 5.2), (3.8, 14, 10.8), "brass"))
+        # hoop holding the cloth to the mast
+        elements.append(box((3.0, 7, centre - half - 0.4),
+                            (4.6, 9, centre + half + 0.4), "brass"))
 
     return model(elements)
 
@@ -245,40 +218,55 @@ def thruster_frame(frame):
 
 # Aileron deflection: down, neutral, up.
 WING_ANGLES = (-22.5, 0.0, 22.5)
-AILERON_HINGE = (11.0, 7.5, -8.0)
+AILERON_HINGE = (12.0, 7.8, 8.0)
+
+# Which piece of a wing run a model represents. A wing extends outward along its facing, which
+# is -Z in model space, so the hull is at high Z and the tip at low Z.
+WING_SINGLE, WING_ROOT, WING_MIDDLE, WING_TIP = range(4)
 
 
-def wing_frame(angle):
-    """A tapered wing with ribs, a winglet and a moving aileron."""
+def wing_frame(angle, part):
+    """One span of airfoil that tiles into a wing of any length.
+
+    The old wing was a whole fixed wing crammed into one block, which is why it looked stubby:
+    it could never be longer than itself. This is a section instead - place several in a row and
+    they read as one continuous wing, with a mount where it meets the hull and a winglet at the
+    far end.
+    """
+    has_root = part in (WING_SINGLE, WING_ROOT)
+    has_tip = part in (WING_SINGLE, WING_TIP)
+
+    # The section spans its own cell exactly, so consecutive blocks meet with no gap.
+    z0, z1 = (2.0 if has_tip else 0.0), 16.0
+
     elements = [
-        # root mount
-        box((4, 4, 9), (12, 12, 16), "dark"),
-        box((5, 5, 7), (11, 11, 10), "brass"),
-        box((6, 6, 6), (10, 10, 8), "cyan", shade=False),
-        # three tapering panels
-        box((1.5, 6.9, -2), (14.5, 8.5, 7), "cloth"),
-        box((2.5, 6.95, -9), (13.5, 8.45, -2), "cloth"),
-        box((3.5, 7.0, -15), (12.5, 8.4, -9), "cloth"),
-        # leading edge
-        box((1.0, 6.5, -2), (2.8, 8.9, 7), "wood"),
-        box((2.0, 6.55, -9), (3.8, 8.85, -2), "wood"),
-        box((3.0, 6.6, -15), (4.8, 8.8, -9), "wood"),
-        # spar and ribs
-        box((7.25, 6.4, -15), (8.75, 9.0, 7), "wood"),
-        box((3, 6.4, -4.2), (13.5, 9.0, -2.8), "brass"),
-        box((4, 6.45, -10.2), (12.5, 8.95, -8.8), "brass"),
-        # winglet
-        box((4.5, 6.6, -16), (11.5, 8.4, -14.6), "metal"),
-        box((5.5, 8.4, -16), (10.5, 12.5, -14.8), "metal"),
-        box((6.2, 12.5, -15.9), (9.8, 13.4, -14.9), "brass"),
-        # navigation light on the tip
-        box((7.2, 9.4, -16), (8.8, 10.6, -15.6), "cyan", shade=False),
+        # leading edge, rounded with two steps
+        box((1.0, 6.9, z0), (2.6, 8.9, z1), "wood"),
+        box((2.6, 6.6, z0), (4.2, 9.2, z1), "metal"),
+        # main airfoil body
+        box((4.2, 6.8, z0), (12.0, 9.0, z1), "cloth"),
+        # spar running the length of the wing
+        box((6.5, 6.5, z0), (8.5, 9.3, z1), "wood"),
+        # rib at the near end, so a long wing shows regular ribs
+        box((3.0, 6.4, z1 - 1.4), (13.5, 9.4, z1 - 0.2), "brass"),
     ]
 
     # trailing-edge aileron, hinged along the span
     hinge = rotation(AILERON_HINGE, "z", angle) if angle else None
-    elements.append(box((12.5, 6.9, -14.5), (15.5, 8.5, -2.5), "wood", rotation=hinge))
-    elements.append(box((13.0, 7.1, -14.2), (15.2, 8.3, -2.8), "cloth", rotation=hinge))
+    elements.append(box((12.0, 7.0, z0), (15.4, 8.8, z1), "wood", rotation=hinge))
+    elements.append(box((12.4, 7.2, z0 + 0.3), (15.2, 8.6, z1 - 0.3), "cloth", rotation=hinge))
+
+    if has_root:
+        # mount that ties the wing into the hull
+        elements.append(box((4, 4, 13.5), (12, 12, 16), "dark"))
+        elements.append(box((5, 5, 12.0), (11, 11, 14.0), "brass"))
+        elements.append(box((6, 6, 11.2), (10, 10, 12.4), "cyan", shade=False))
+
+    if has_tip:
+        elements.append(box((2.0, 6.7, 0.6), (14.0, 9.1, 2.2), "metal"))
+        elements.append(box((3.0, 9.1, 0.8), (12.0, 13.5, 2.0), "metal"))
+        elements.append(box((4.0, 13.5, 0.9), (11.0, 14.6, 1.9), "brass"))
+        elements.append(box((6.5, 10.0, 0.4), (9.5, 11.4, 0.8), "cyan", shade=False))
 
     return model(elements)
 
@@ -350,18 +338,23 @@ def write_json(path, payload):
         handle.write("\n")
 
 
-def write_blockstate(name, frame_property, frame_count):
-    """One variant per facing and animation frame."""
+def write_blockstate(name, frame_property, frame_count,
+                     connection_property=None, connection_count=1):
+    """One variant per facing, animation frame and connection piece."""
     variants = {}
     for facing, y_rotation in FACING_ROTATIONS.items():
         for frame in range(frame_count):
-            key = f"facing={facing}"
-            if frame_property:
-                key += f",{frame_property}={frame}"
-            variant = {"model": f"astra_physics:block/{name}_{frame}"}
-            if y_rotation:
-                variant["y"] = y_rotation
-            variants[key] = variant
+            for piece in range(connection_count):
+                key = f"facing={facing}"
+                if frame_property:
+                    key += f",{frame_property}={frame}"
+                if connection_property:
+                    key += f",{connection_property}={piece}"
+                suffix = f"{frame}" if connection_property is None else f"{frame}_{piece}"
+                variant = {"model": f"astra_physics:block/{name}_{suffix}"}
+                if y_rotation:
+                    variant["y"] = y_rotation
+                variants[key] = variant
     write_json(os.path.join(BLOCKSTATES, f"{name}.json"), {"variants": variants})
 
 
@@ -374,9 +367,11 @@ def main():
     generated.append(("helm", len(HELM_ANGLES)))
 
     for frame in range(SAIL_FRAMES):
-        write_json(os.path.join(MODELS, f"sail_{frame}.json"), sail_frame(frame))
-    write_blockstate("sail", "wind", SAIL_FRAMES)
-    generated.append(("sail", SAIL_FRAMES))
+        for mast in range(2):
+            write_json(os.path.join(MODELS, f"sail_{frame}_{mast}.json"),
+                       sail_frame(frame, mast == 1))
+    write_blockstate("sail", "wind", SAIL_FRAMES, "mast", 2)
+    generated.append(("sail", SAIL_FRAMES * 2))
 
     for frame in range(ENGINE_FRAMES):
         write_json(os.path.join(MODELS, f"engine_{frame}.json"), engine_frame(frame))
@@ -389,9 +384,11 @@ def main():
     generated.append(("thruster", THRUSTER_FRAMES))
 
     for index, angle in enumerate(WING_ANGLES):
-        write_json(os.path.join(MODELS, f"wing_{index}.json"), wing_frame(angle))
-    write_blockstate("wing", "aileron", len(WING_ANGLES))
-    generated.append(("wing", len(WING_ANGLES)))
+        for part in range(4):
+            write_json(os.path.join(MODELS, f"wing_{index}_{part}.json"),
+                       wing_frame(angle, part))
+    write_blockstate("wing", "aileron", len(WING_ANGLES), "part", 4)
+    generated.append(("wing", len(WING_ANGLES) * 4))
 
     for frame in range(PROPELLER_FRAMES):
         write_json(os.path.join(MODELS, f"propeller_{frame}.json"), propeller_frame(frame))

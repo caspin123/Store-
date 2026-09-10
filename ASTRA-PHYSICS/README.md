@@ -13,8 +13,8 @@ fly and walk around on.
 | **Helm** | Steering position. Right-click to take the wheel. | Five wheel positions, hard to port through hard to starboard, with a marked king spoke |
 | **Engine** | Powerplant. Right-click cycles OFF / 25 / 50 / 75 / 100%. Sneak + right-click switches Marine and Aircraft. | Flywheel turns and three pistons pump, at a speed set by the power step |
 | **Propeller** | Converts engine power into thrust. Pushes opposite the face it points at. | Four blades turn; stopped without both power and throttle |
-| **Sail** | Wind propulsion, no engine needed. | Canvas bellies in a wave travelling up the sail |
-| **Wing** | Lift in Aircraft mode. Mount mirrored pairs facing outward. | Aileron deflects with the pilot's steering |
+| **Sail** | Wind propulsion, no engine needed. Tiles — place a block of them for a bigger sail. | Canvas bellies in a wave travelling across the sheet |
+| **Wing** | Lift in Aircraft mode. Mount mirrored pairs facing outward. Tiles — place several in a row for a longer wing. | Aileron deflects with the pilot's steering |
 | **Thruster** | Vertical lift, strongest in Aircraft mode. | Exhaust plume grows and pulses; cold nozzle when idle |
 
 Components animate from the ship's real state, not a fixed loop: a parked ship's propellers are

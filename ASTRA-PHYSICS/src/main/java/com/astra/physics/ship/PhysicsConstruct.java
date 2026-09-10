@@ -258,11 +258,22 @@ public final class PhysicsConstruct {
     public int sailCount() { return sailCount; }
     public int wingCount() { return wingCount; }
     public int thrusterCount() { return thrusterCount; }
-    public boolean enginesEnabled() { return enginePowerStep > 0; }
+    /**
+     * True only when the construct has an engine block AND its power is turned up.
+     *
+     * <p>The power step is stored on the construct, not on any block, and it defaults to 50%.
+     * Testing it alone meant a hull with no engine at all still counted as running: its
+     * propellers spun and its exhaust smoked while the physics, which does check for an engine,
+     * produced no thrust at all.
+     */
+    public boolean enginesEnabled() { return enginePowerStep > 0 && engineCount > 0; }
     public EngineMode engineMode() { return engineMode; }
     public int enginePowerStep() { return enginePowerStep; }
     public int enginePowerPercent() { return enginePowerStep * 25; }
-    public double enginePowerScale() { return enginePowerStep / 4.0; }
+    public double enginePowerScale() { return enginesEnabled() ? enginePowerStep / 4.0 : 0.0; }
+
+    /** Power step as the client should see it: zero when there is no engine to run. */
+    public int effectivePowerStep() { return enginesEnabled() ? enginePowerStep : 0; }
     public double wingBalanceFactor() { return wingBalanceFactor; }
 
     public boolean isStructureDirty() { return structureDirty; }
@@ -284,11 +295,12 @@ public final class PhysicsConstruct {
         byte steer = ConstructStatePayload.quantise(helmSteer);
         boolean aircraft = engineMode == EngineMode.AIRCRAFT;
 
+        int power = effectivePowerStep();
         if (throttle != netThrottle || steer != netSteer
-                || enginePowerStep != netPowerStep || aircraft != netAircraftMode) {
+                || power != netPowerStep || aircraft != netAircraftMode) {
             netThrottle = throttle;
             netSteer = steer;
-            netPowerStep = enginePowerStep;
+            netPowerStep = power;
             netAircraftMode = aircraft;
             stateDirty = true;
         }
@@ -906,7 +918,7 @@ public final class PhysicsConstruct {
         driveX = rotateDirectionX(localDriveX, localDriveZ);
         driveZ = rotateDirectionZ(localDriveX, localDriveZ);
 
-        boolean poweredDrive = enginesEnabled() && engineCount > 0 && propellerCount > 0;
+        boolean poweredDrive = enginesEnabled() && propellerCount > 0;
 
         if (poweredDrive && Math.abs(throttle) > 0.001) {
             double engineCountFactor = Math.min(1.45, 0.85 + Math.sqrt(engineCount) * 0.18);
@@ -920,13 +932,17 @@ public final class PhysicsConstruct {
                 // Aircraft mode turns the same engine into an air-optimised prop engine. It still
                 // works weakly in water so switching mode can never strand a craft.
                 double airEfficiency = submerged < 0.20 ? 1.0 : 0.22;
-                double targetSpeed = throttle * (0.20 + 0.45 * power) * airEfficiency;
-                double acceleration = (0.006 + 0.016 * power) * engineCountFactor * airEfficiency;
+                // Target and cap now agree. They did not before: the formula asked for 0.65
+                // blocks per tick while the cap allowed 0.68, so an aircraft simply pinned
+                // itself at the limit and flew like a missile.
+                double targetSpeed = throttle * (0.09 + 0.29 * power) * airEfficiency;
+                // Halved, so reaching cruise takes a couple of seconds instead of one.
+                double acceleration = (0.003 + 0.008 * power) * engineCountFactor * airEfficiency;
                 accelerateTowardHorizontalSpeed(driveX, driveZ, targetSpeed, acceleration);
             }
         }
 
-        if (enginesEnabled() && engineCount > 0 && thrusterCount > 0 && throttle > 0.0) {
+        if (enginesEnabled() && thrusterCount > 0 && throttle > 0.0) {
             double modeEfficiency = engineMode == EngineMode.AIRCRAFT ? 1.0 : 0.30;
             double lift = thrusterCount * (0.010 + 0.025 * power) * throttle * modeEfficiency;
             vy += Math.min(0.095, lift);
@@ -1008,7 +1024,7 @@ public final class PhysicsConstruct {
         double limit;
         if (engineMode == EngineMode.AIRCRAFT && submerged < 0.20 && enginesEnabled()) {
             limit = config.maxAircraftSpeed;
-        } else if (enginesEnabled() && engineCount > 0 && propellerCount > 0) {
+        } else if (enginesEnabled() && propellerCount > 0) {
             limit = config.maxMarineSpeed;
         } else if (sailCount > 0) {
             limit = config.maxSailSpeed + 0.035;
@@ -1017,7 +1033,7 @@ public final class PhysicsConstruct {
         }
 
         // Sail plus engine earns a small combined bonus instead of additive runaway speed.
-        if (sailCount > 0 && enginesEnabled() && engineCount > 0 && propellerCount > 0
+        if (sailCount > 0 && enginesEnabled() && propellerCount > 0
                 && engineMode == EngineMode.MARINE) {
             limit = Math.min(config.maxMarineSpeed + 0.08, limit + 0.035);
         }

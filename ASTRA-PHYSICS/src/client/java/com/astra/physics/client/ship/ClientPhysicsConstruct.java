@@ -1,7 +1,9 @@
 package com.astra.physics.client.ship;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -19,6 +21,8 @@ public final class ClientPhysicsConstruct {
     private final UUID id;
     private final List<ClientBlock> blocks;
     private final List<ClientBlock> visibleBlocks;
+    /** Local position to block, so connected components can find their neighbours. */
+    private final Map<Long, ClientBlock> index = new HashMap<>();
 
     private double previousX, previousY, previousZ;
     private double x, y, z;
@@ -40,6 +44,9 @@ public final class ClientPhysicsConstruct {
         this.blocks = payload.blocks().stream()
                 .map(b -> new ClientBlock(b.localX(), b.localY(), b.localZ(), Block.stateById(b.stateId())))
                 .toList();
+        for (ClientBlock block : this.blocks) {
+            this.index.put(key(block.localX(), block.localY(), block.localZ()), block);
+        }
         this.visibleBlocks = computeVisibleBlocks(this.blocks);
 
         int minX = Integer.MAX_VALUE, maxX = Integer.MIN_VALUE;
@@ -113,6 +120,12 @@ public final class ClientPhysicsConstruct {
 
     public UUID id() { return id; }
     public List<ClientBlock> blocks() { return blocks; }
+
+    /** True when a block of exactly this type sits at the given local position. */
+    public boolean hasBlockAt(net.minecraft.world.level.block.Block type, int localX, int localY, int localZ) {
+        ClientBlock found = index.get(key(localX, localY, localZ));
+        return found != null && found.state().is(type);
+    }
 
     /** Blocks worth drawing: everything except the fully buried interior. */
     public List<ClientBlock> visibleBlocks() { return visibleBlocks; }

@@ -42,6 +42,7 @@
   "message.astra_physics.drive.none": "no propulsion",
   "message.astra_physics.helm.engaged": "At the helm with %s. W and S drive, A and D turn the ship, jump and sneak climb and dive, G lets go.",
   "message.astra_physics.helm.released": "Helm released. Walking restored.",
+  "message.astra_physics.helm.readout": "%s m/s  ·  climb %s  ·  alt %s  ·  heading %s  ·  engine %s %s",
   "message.astra_physics.helm.occupied": "Another pilot is already at this helm.",
   "message.astra_physics.interact.data_only": "Block entity data is preserved (%s), but this type has no local interface yet.",
   "message.astra_physics.container.title": "Aboard: %s",

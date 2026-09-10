@@ -14,6 +14,7 @@ public final class AstraNetworking {
         PayloadTypeRegistry.playS2C().register(ConstructRemovePayload.TYPE, ConstructRemovePayload.CODEC);
         PayloadTypeRegistry.playS2C().register(SelectionSyncPayload.TYPE, SelectionSyncPayload.CODEC);
         PayloadTypeRegistry.playS2C().register(PilotStatePayload.TYPE, PilotStatePayload.CODEC);
+        PayloadTypeRegistry.playS2C().register(ConstructStatePayload.TYPE, ConstructStatePayload.CODEC);
 
         PayloadTypeRegistry.playC2S().register(ConstructPlaceBlockPayload.TYPE, ConstructPlaceBlockPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(ConstructBreakBlockPayload.TYPE, ConstructBreakBlockPayload.CODEC);

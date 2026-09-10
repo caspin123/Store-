@@ -2,6 +2,7 @@ package com.astra.physics.client;
 
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderEvents;
 import net.fabricmc.fabric.api.event.client.player.ClientPreAttackCallback;
@@ -25,6 +26,7 @@ import com.astra.physics.network.ConstructInteractPayload;
 import com.astra.physics.network.ConstructPlaceBlockPayload;
 import com.astra.physics.network.ConstructRemovePayload;
 import com.astra.physics.network.ConstructSpawnPayload;
+import com.astra.physics.network.ConstructStatePayload;
 import com.astra.physics.network.ConstructTransformPayload;
 import com.astra.physics.network.SelectionSyncPayload;
 import com.astra.physics.network.PilotStatePayload;
@@ -32,7 +34,9 @@ import com.astra.physics.registry.AstraBlocks;
 import com.astra.physics.registry.AstraItems;
 
 public final class AstraPhysicsClient implements ClientModInitializer {
-    private static final double CONSTRUCT_REACH = 6.0;
+    private static double constructReach() {
+        return com.astra.physics.config.AstraConfig.get().interactionReach;
+    }
 
     @Override
     public void onInitializeClient() {
@@ -50,7 +54,7 @@ public final class AstraPhysicsClient implements ClientModInitializer {
 
         ClientPreAttackCallback.EVENT.register((client, player, clickCount) -> {
             if (clickCount == 0 || client.level == null) return false;
-            ConstructRaycaster.Hit hit = ConstructRaycaster.raycast(player, CONSTRUCT_REACH);
+            ConstructRaycaster.Hit hit = ConstructRaycaster.raycast(player, constructReach());
             if (hit == null) return false;
 
             if (client.hitResult != null && client.hitResult.getType() != HitResult.Type.MISS) {
@@ -70,6 +74,8 @@ public final class AstraPhysicsClient implements ClientModInitializer {
         });
         ClientPlayNetworking.registerGlobalReceiver(ConstructTransformPayload.TYPE, (payload, context) ->
                 ClientConstructManager.transform(payload));
+        ClientPlayNetworking.registerGlobalReceiver(ConstructStatePayload.TYPE, (payload, context) ->
+                ClientConstructManager.state(payload));
         ClientPlayNetworking.registerGlobalReceiver(ConstructRemovePayload.TYPE, (payload, context) -> {
             ClientConstructManager.remove(payload.constructId());
             ClientHelmController.clearIf(payload.constructId());
@@ -78,6 +84,19 @@ public final class AstraPhysicsClient implements ClientModInitializer {
                 ClientSelectionManager.applyServerSync(payload));
         ClientPlayNetworking.registerGlobalReceiver(PilotStatePayload.TYPE, (payload, context) ->
                 ClientHelmController.applyServerState(payload.constructId(), payload.active(), payload.helmX(), payload.helmY(), payload.helmZ()));
+
+        // Client state is static, so without this a singleplayer player who leaves one world and
+        // opens another would still be rendering the first world's constructs.
+        ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
+            ClientConstructManager.clear();
+            ClientSelectionManager.clearSilently();
+            ClientHelmController.reset();
+        });
+        ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {
+            ClientConstructManager.clear();
+            ClientSelectionManager.clearSilently();
+            ClientHelmController.reset();
+        });
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             ClientMovingPlatformSupport.tick(client);
@@ -107,7 +126,7 @@ public final class AstraPhysicsClient implements ClientModInitializer {
             return false;
         }
 
-        ConstructRaycaster.Hit hit = ConstructRaycaster.raycast(player, CONSTRUCT_REACH);
+        ConstructRaycaster.Hit hit = ConstructRaycaster.raycast(player, constructReach());
         if (hit == null) return false;
 
         // Do not steal a click from a closer real Minecraft block/entity.

@@ -1,48 +1,78 @@
 {
   "variants": {
     "facing=north,steer=0": {
-      "model": "astra_physics:block/helm_left"
+      "model": "astra_physics:block/helm_0"
     },
     "facing=north,steer=1": {
-      "model": "astra_physics:block/helm"
+      "model": "astra_physics:block/helm_1"
     },
     "facing=north,steer=2": {
-      "model": "astra_physics:block/helm_right"
+      "model": "astra_physics:block/helm_2"
+    },
+    "facing=north,steer=3": {
+      "model": "astra_physics:block/helm_3"
+    },
+    "facing=north,steer=4": {
+      "model": "astra_physics:block/helm_4"
     },
     "facing=east,steer=0": {
-      "model": "astra_physics:block/helm_left",
+      "model": "astra_physics:block/helm_0",
       "y": 90
     },
     "facing=east,steer=1": {
-      "model": "astra_physics:block/helm",
+      "model": "astra_physics:block/helm_1",
       "y": 90
     },
     "facing=east,steer=2": {
-      "model": "astra_physics:block/helm_right",
+      "model": "astra_physics:block/helm_2",
+      "y": 90
+    },
+    "facing=east,steer=3": {
+      "model": "astra_physics:block/helm_3",
+      "y": 90
+    },
+    "facing=east,steer=4": {
+      "model": "astra_physics:block/helm_4",
       "y": 90
     },
     "facing=south,steer=0": {
-      "model": "astra_physics:block/helm_left",
+      "model": "astra_physics:block/helm_0",
       "y": 180
     },
     "facing=south,steer=1": {
-      "model": "astra_physics:block/helm",
+      "model": "astra_physics:block/helm_1",
       "y": 180
     },
     "facing=south,steer=2": {
-      "model": "astra_physics:block/helm_right",
+      "model": "astra_physics:block/helm_2",
+      "y": 180
+    },
+    "facing=south,steer=3": {
+      "model": "astra_physics:block/helm_3",
+      "y": 180
+    },
+    "facing=south,steer=4": {
+      "model": "astra_physics:block/helm_4",
       "y": 180
     },
     "facing=west,steer=0": {
-      "model": "astra_physics:block/helm_left",
+      "model": "astra_physics:block/helm_0",
       "y": 270
     },
     "facing=west,steer=1": {
-      "model": "astra_physics:block/helm",
+      "model": "astra_physics:block/helm_1",
       "y": 270
     },
     "facing=west,steer=2": {
-      "model": "astra_physics:block/helm_right",
+      "model": "astra_physics:block/helm_2",
+      "y": 270
+    },
+    "facing=west,steer=3": {
+      "model": "astra_physics:block/helm_3",
+      "y": 270
+    },
+    "facing=west,steer=4": {
+      "model": "astra_physics:block/helm_4",
       "y": 270
     }
   }

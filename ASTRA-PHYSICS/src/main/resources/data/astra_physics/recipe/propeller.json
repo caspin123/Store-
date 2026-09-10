@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "group": "astra_physics",
+  "pattern": [
+    "/I/",
+    "IHI",
+    "/I/"
+  ],
+  "key": {
+    "I": "minecraft:iron_ingot",
+    "H": "minecraft:copper_ingot"
+  },
+  "result": {
+    "id": "astra_physics:propeller",
+    "count": 1
+  }
+}

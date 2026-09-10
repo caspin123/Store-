@@ -95,7 +95,7 @@ public record SelectionSyncPayload(
         int secondY = buf.readInt();
         int secondZ = buf.readInt();
         int encodedCount = buf.readVarInt();
-        int count = Math.min(encodedCount, AstraPhysics.MAX_SELECTED_BLOCKS);
+        int count = Math.min(encodedCount, AstraPhysics.HARD_BLOCK_LIMIT);
         List<BlockPos> blocks = new ArrayList<>(count);
         for (int i = 0; i < encodedCount; i++) {
             int x = buf.readInt();

@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "group": "astra_physics",
+  "pattern": [
+    "/S/",
+    "SWS",
+    "/S/"
+  ],
+  "key": {
+    "S": "minecraft:stick",
+    "W": "minecraft:oak_planks"
+  },
+  "result": {
+    "id": "astra_physics:helm",
+    "count": 1
+  }
+}

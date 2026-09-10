@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import com.astra.physics.network.ConstructSpawnPayload;
+import com.astra.physics.network.ConstructStatePayload;
 import com.astra.physics.network.ConstructTransformPayload;
 
 public final class ClientConstructManager {
@@ -21,6 +22,13 @@ public final class ClientConstructManager {
         ClientPhysicsConstruct construct = CONSTRUCTS.get(payload.id());
         if (construct != null) {
             construct.updateTransform(payload.x(), payload.y(), payload.z());
+        }
+    }
+
+    public static void state(ConstructStatePayload payload) {
+        ClientPhysicsConstruct construct = CONSTRUCTS.get(payload.constructId());
+        if (construct != null) {
+            construct.applyState(payload);
         }
     }
 

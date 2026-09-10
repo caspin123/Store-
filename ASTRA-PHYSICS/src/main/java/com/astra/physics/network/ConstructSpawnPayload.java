@@ -49,7 +49,7 @@ public record ConstructSpawnPayload(
         int sizeX = buf.readVarInt();
         int sizeY = buf.readVarInt();
         int sizeZ = buf.readVarInt();
-        int count = Math.min(buf.readVarInt(), AstraPhysics.MAX_SELECTED_BLOCKS);
+        int count = Math.min(buf.readVarInt(), AstraPhysics.HARD_BLOCK_LIMIT);
         List<NetBlock> blocks = new ArrayList<>(count);
         for (int i = 0; i < count; i++) {
             blocks.add(new NetBlock(buf.readVarInt(), buf.readVarInt(), buf.readVarInt(), buf.readVarInt()));

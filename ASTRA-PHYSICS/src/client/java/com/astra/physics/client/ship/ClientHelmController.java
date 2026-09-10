@@ -38,11 +38,15 @@ public final class ClientHelmController {
         return id != null && id.equals(controlledConstruct);
     }
 
-    public static int visualSteerFor(UUID id) {
-        if (!isControlling(id)) return 1;
-        if (visualSteer < -0.20F) return 0;
-        if (visualSteer > 0.20F) return 2;
-        return 1;
+    /**
+     * The local pilot's smoothed steering input, -1 to 1.
+     *
+     * <p>The renderer prefers this over the value echoed back by the server so the wheel and the
+     * ailerons answer the pilot's keys on the same frame they are pressed, instead of a packet
+     * round trip later.
+     */
+    public static float visualSteer() {
+        return visualSteer;
     }
 
     public static void applyServerState(UUID id, boolean active, int localHelmX, int localHelmY, int localHelmZ) {
@@ -55,6 +59,16 @@ public final class ClientHelmController {
         lastThrottle = 0.0F;
         lastSteer = 0.0F;
         visualSteer = 0.0F;
+    }
+
+    /** Drops all local piloting state, for a world change or disconnect. */
+    public static void reset() {
+        controlledConstruct = null;
+        visualSteer = 0.0F;
+        lastThrottle = 0.0F;
+        lastSteer = 0.0F;
+        sendCooldown = 0;
+        releaseGuardTicks = 0;
     }
 
     public static void clearIf(UUID id) {
@@ -97,8 +111,9 @@ public final class ClientHelmController {
         if (client.options.keyLeft.isDown()) steer -= 1.0F;
         if (client.options.keyRight.isDown()) steer += 1.0F;
 
-        // Wheel movement eases instead of snapping, even though the block model has three states.
-        visualSteer += (steer - visualSteer) * 0.45F;
+        // The wheel eases toward the input rather than snapping. With five baked wheel positions
+        // the easing is what makes a turn read as a turn instead of a jump.
+        visualSteer += (steer - visualSteer) * 0.35F;
 
         boolean changed = throttle != lastThrottle || steer != lastSteer;
         if (sendCooldown > 0) sendCooldown--;

@@ -9,94 +9,88 @@ import java.util.UUID;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 
 import net.minecraft.core.BlockPos;
-import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 
-import com.astra.physics.AstraPhysics;
+import com.astra.physics.config.AstraConfig;
 import com.astra.physics.network.SelectionSyncPayload;
 import com.astra.physics.ship.PhysicsConstructManager;
+import com.astra.physics.util.AstraText;
 
-/** Server-authoritative wand selection state. */
+/**
+ * Server-authoritative wand selection.
+ *
+ * <p>The client never decides what is selected; it only draws what the server tells it. That
+ * keeps a modified client from assembling blocks it was never allowed to touch.
+ */
 public final class ServerSelectionManager {
-    private static final long MAX_SCAN_VOLUME = 65_536L;
     private static final Map<UUID, SelectionState> STATES = new HashMap<>();
 
     private ServerSelectionManager() {}
 
     public static void handleClick(ServerPlayer player, Level level, BlockPos clicked) {
         SelectionState state = STATES.computeIfAbsent(player.getUUID(), ignored -> new SelectionState());
+        AstraConfig config = AstraConfig.get();
 
         if (state.first == null) {
             state.first = clicked.immutable();
             state.second = null;
             state.blocks = List.of();
-            player.displayClientMessage(Component.literal(
-                    "ASTRA: Point 1 selected at " + format(state.first)
-                            + " | Right-click Point 2 | Shift+Right-click = clear"
-            ), true);
+            AstraText.sendActionBar(player, AstraText.info("selection.point1", format(state.first)));
             sync(player, SelectionSyncPayload.pointOne(state.first));
             return;
         }
 
         if (state.second == null) {
             long scanVolume = selectionVolume(state.first, clicked);
-            if (scanVolume > MAX_SCAN_VOLUME) {
-                player.displayClientMessage(Component.literal(
-                        "ASTRA: Area is too large to scan safely (" + scanVolume + " cells)."
-                ), true);
+            if (scanVolume > config.maxSelectionScanVolume) {
+                AstraText.sendActionBar(player, AstraText.warning("selection.too_large",
+                        scanVolume, config.maxSelectionScanVolume));
                 sync(player, SelectionSyncPayload.pointOne(state.first));
                 return;
             }
 
-            List<BlockPos> blocks = collectSolidBlocks(level, state.first, clicked, AstraPhysics.MAX_SELECTED_BLOCKS + 1);
-            if (blocks.size() > AstraPhysics.MAX_SELECTED_BLOCKS) {
-                player.displayClientMessage(Component.literal(
-                        "ASTRA: Selection rejected: more than " + AstraPhysics.MAX_SELECTED_BLOCKS + " non-air blocks."
-                ), true);
+            List<BlockPos> blocks = collectSolidBlocks(level, state.first, clicked,
+                    config.maxConstructBlocks + 1);
+            if (blocks.size() > config.maxConstructBlocks) {
+                AstraText.sendActionBar(player, AstraText.warning("selection.rejected_count",
+                        config.maxConstructBlocks));
                 sync(player, SelectionSyncPayload.pointOne(state.first));
                 return;
             }
             if (blocks.isEmpty()) {
-                player.displayClientMessage(Component.literal("ASTRA: Selection contains no blocks."), true);
+                AstraText.sendActionBar(player, AstraText.warning("selection.empty"));
                 sync(player, SelectionSyncPayload.pointOne(state.first));
                 return;
             }
 
-            // Safety rules: reject terrain-only blocks/fluids; BlockEntities are captured safely during assembly.
+            // Reject the two block kinds assembly can never handle. BlockEntities are allowed:
+            // their NBT and inventories are captured before any world block is removed.
             for (BlockPos pos : blocks) {
                 BlockState blockState = level.getBlockState(pos);
                 if (blockState.is(Blocks.BEDROCK)) {
-                    player.displayClientMessage(Component.literal(
-                            "ASTRA: Bedrock cannot be assembled (" + format(pos) + ")."
-                    ), true);
+                    AstraText.sendActionBar(player, AstraText.warning("selection.bedrock", format(pos)));
                     sync(player, SelectionSyncPayload.pointOne(state.first));
                     return;
                 }
                 if (!blockState.getFluidState().isEmpty()) {
-                    player.displayClientMessage(Component.literal(
-                            "ASTRA: Fluids/waterlogged blocks are not supported yet (" + format(pos) + ")."
-                    ), true);
+                    AstraText.sendActionBar(player, AstraText.warning("selection.fluid", format(pos)));
                     sync(player, SelectionSyncPayload.pointOne(state.first));
                     return;
                 }
-                // BlockEntities are allowed from 0.0.6 onward. Their NBT/inventory is
-                // captured server-side during assembly before any world block is removed.
             }
 
             state.second = clicked.immutable();
             state.blocks = List.copyOf(blocks);
-            player.displayClientMessage(Component.literal(
-                    "ASTRA: Selected " + state.blocks.size() + "/" + AstraPhysics.MAX_SELECTED_BLOCKS
-                            + " blocks | Right-click again = ASSEMBLE | Shift+Right-click = clear"
-            ), true);
+            AstraText.sendActionBar(player, AstraText.info("selection.selected",
+                    state.blocks.size(), config.maxConstructBlocks));
             sync(player, SelectionSyncPayload.complete(state.first, state.second, state.blocks));
             return;
         }
 
-        // Third normal click = assemble the already validated server-side selection.
+        // Third click assembles the selection the server already validated.
         if (PhysicsConstructManager.assemble(player, level, state.blocks)) {
             STATES.remove(player.getUUID());
             sync(player, SelectionSyncPayload.clear());
@@ -106,7 +100,18 @@ public final class ServerSelectionManager {
     public static void clear(ServerPlayer player) {
         STATES.remove(player.getUUID());
         sync(player, SelectionSyncPayload.clear());
-        player.displayClientMessage(Component.literal("ASTRA: Selection cleared."), true);
+        AstraText.sendActionBar(player, AstraText.info("selection.cleared"));
+    }
+
+    /** Selections are per-player scratch state and must not outlive the session. */
+    public static void onPlayerDisconnect(ServerPlayer player) {
+        if (player != null) {
+            STATES.remove(player.getUUID());
+        }
+    }
+
+    public static void clearAll() {
+        STATES.clear();
     }
 
     private static void sync(ServerPlayer player, SelectionSyncPayload payload) {
@@ -123,7 +128,7 @@ public final class ServerSelectionManager {
         int maxY = Math.max(a.getY(), b.getY());
         int maxZ = Math.max(a.getZ(), b.getZ());
 
-        List<BlockPos> blocks = new ArrayList<>(Math.min(AstraPhysics.MAX_SELECTED_BLOCKS, 256));
+        List<BlockPos> blocks = new ArrayList<>(256);
         BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
         for (int y = minY; y <= maxY; y++) {
             for (int z = minZ; z <= maxZ; z++) {

@@ -3,7 +3,7 @@
   "id": "astra_physics",
   "version": "${version}",
   "name": "ASTRA Physics",
-  "description": "Pure-Java ASTRA moving constructs with smooth water interpolation, configurable marine/aircraft engines, buoyancy, helm control and Android ARM64-focused rendering.",
+  "description": "Pure-Java ASTRA moving constructs: persistent assembled ships, smooth water interpolation, configurable marine and aircraft engines, buoyancy, helm control, animated components and Android ARM64 friendly rendering.",
   "authors": [
     "ASTRA"
   ],

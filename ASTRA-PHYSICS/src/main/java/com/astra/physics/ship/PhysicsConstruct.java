@@ -20,6 +20,7 @@ import net.minecraft.world.phys.AABB;
 
 import com.astra.physics.block.AstraFacingBlock;
 import com.astra.physics.config.AstraConfig;
+import com.astra.physics.network.ConstructStatePayload;
 import com.astra.physics.registry.AstraBlocks;
 
 /**
@@ -96,6 +97,14 @@ public final class PhysicsConstruct {
     /** Set when the block set changes, so the manager knows to resend the full snapshot. */
     private boolean structureDirty;
 
+    // Quantised drivetrain state mirrored to clients for component animation. Comparing the
+    // quantised values means a packet only goes out when something visible actually changed.
+    private byte netThrottle;
+    private byte netSteer;
+    private int netPowerStep = -1;
+    private boolean netAircraftMode;
+    private boolean stateDirty = true;
+
     private final BlockPos.MutableBlockPos scratchPos = new BlockPos.MutableBlockPos();
 
     public PhysicsConstruct(UUID id, List<StoredBlock> blocks, double x, double y, double z) {
@@ -155,6 +164,32 @@ public final class PhysicsConstruct {
 
     public boolean isStructureDirty() { return structureDirty; }
     public void clearStructureDirty() { structureDirty = false; }
+
+    public boolean isStateDirty() { return stateDirty; }
+    public void clearStateDirty() { stateDirty = false; }
+    public byte netThrottle() { return netThrottle; }
+    public byte netSteer() { return netSteer; }
+
+    /**
+     * Recomputes the client-visible drivetrain state and flags it when it changed.
+     *
+     * <p>Quantising first is what keeps this cheap: a throttle drifting by a hundredth does not
+     * move any animation frame, so it must not cost a packet either.
+     */
+    private void refreshNetworkState() {
+        byte throttle = ConstructStatePayload.quantise(helmThrottle);
+        byte steer = ConstructStatePayload.quantise(helmSteer);
+        boolean aircraft = engineMode == EngineMode.AIRCRAFT;
+
+        if (throttle != netThrottle || steer != netSteer
+                || enginePowerStep != netPowerStep || aircraft != netAircraftMode) {
+            netThrottle = throttle;
+            netSteer = steer;
+            netPowerStep = enginePowerStep;
+            netAircraftMode = aircraft;
+            stateDirty = true;
+        }
+    }
 
     /** True when the construct actually moved this tick, so idle hulls cost no bandwidth. */
     public boolean hasMoved() {
@@ -365,6 +400,7 @@ public final class PhysicsConstruct {
         moveAxis(level, 0.0, 0.0, vz);
 
         emitComponentEffects(level, config, submergedFraction);
+        refreshNetworkState();
     }
 
     private void updateControlDecay() {

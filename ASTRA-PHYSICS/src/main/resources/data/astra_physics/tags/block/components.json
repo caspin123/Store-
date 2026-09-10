@@ -1,0 +1,11 @@
+{
+  "replace": false,
+  "values": [
+    "astra_physics:helm",
+    "astra_physics:engine",
+    "astra_physics:propeller",
+    "astra_physics:sail",
+    "astra_physics:wing",
+    "astra_physics:thruster"
+  ]
+}

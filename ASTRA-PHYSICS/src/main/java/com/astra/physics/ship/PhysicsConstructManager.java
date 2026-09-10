@@ -46,6 +46,7 @@ import com.astra.physics.network.ConstructInteractPayload;
 import com.astra.physics.network.ConstructPlaceBlockPayload;
 import com.astra.physics.network.ConstructRemovePayload;
 import com.astra.physics.network.ConstructSpawnPayload;
+import com.astra.physics.network.ConstructStatePayload;
 import com.astra.physics.network.ConstructSpawnPayload.NetBlock;
 import com.astra.physics.network.ConstructTransformPayload;
 import com.astra.physics.network.PilotStatePayload;
@@ -499,13 +500,12 @@ public final class PhysicsConstructManager {
             if (player.isShiftKeyDown()) {
                 PhysicsConstruct.EngineMode mode = construct.toggleEngineMode();
                 AstraText.sendActionBar(player, AstraText.info("engine.mode",
-                        AstraText.plain("engine.mode." + mode.name().toLowerCase(java.util.Locale.ROOT)),
-                        construct.enginePowerPercent()));
+                        modeLabel(mode), construct.enginePowerPercent()));
             } else {
                 int power = construct.cycleEnginePower();
                 AstraText.sendActionBar(player, AstraText.info("engine.power",
                         power == 0 ? AstraText.plain("engine.off") : Component.literal(power + "%"),
-                        AstraText.plain("engine.mode." + construct.engineMode().name().toLowerCase(java.util.Locale.ROOT))));
+                        modeLabel(construct.engineMode())));
             }
             return;
         }
@@ -544,8 +544,7 @@ public final class PhysicsConstructManager {
         Component drive;
         if (construct.propellerCount() > 0 && construct.engineCount() > 0) {
             drive = AstraText.plain("drive.engine",
-                    AstraText.plain("engine.mode." + construct.engineMode().name().toLowerCase(java.util.Locale.ROOT)),
-                    construct.enginePowerPercent());
+                    modeLabel(construct.engineMode()), construct.enginePowerPercent());
         } else if (construct.sailCount() > 0) {
             drive = AstraText.plain("drive.sail");
         } else {
@@ -564,6 +563,16 @@ public final class PhysicsConstructManager {
             player.setXRot(8.0F);
         }
         anchorPilot(player, construct);
+    }
+
+    /**
+     * Engine mode names are written as literal keys rather than built from the enum name, so the
+     * asset validator can prove every key it sees in the source actually has a translation.
+     */
+    private static Component modeLabel(PhysicsConstruct.EngineMode mode) {
+        return mode == PhysicsConstruct.EngineMode.AIRCRAFT
+                ? AstraText.plain("engine.mode.aircraft")
+                : AstraText.plain("engine.mode.marine");
     }
 
     private static boolean isHelmOccupied(UUID constructId, BlockPos helmPos, UUID excludingPlayer) {
@@ -688,7 +697,9 @@ public final class PhysicsConstructManager {
 
         for (PhysicsConstruct construct : constructs.values()) {
             boolean structureDirty = construct.isStructureDirty();
+            boolean stateDirty = construct.isStateDirty();
             boolean moved = construct.hasMoved();
+            ConstructStatePayload statePayload = stateDirty ? statePayloadFor(construct) : null;
 
             for (ServerPlayer player : level.players()) {
                 Set<UUID> tracked = TRACKED_BY_PLAYER.computeIfAbsent(player.getUUID(), k -> new HashSet<>());
@@ -703,13 +714,31 @@ public final class PhysicsConstructManager {
 
                 if (tracked.add(construct.id()) || structureDirty) {
                     sendFullState(player, construct);
-                } else if (moved) {
+                    // A player who has just started tracking needs the drivetrain state too,
+                    // or the ship's components would stay frozen until the next change.
+                    send(player, ConstructStatePayload.TYPE, statePayloadFor(construct));
+                    continue;
+                }
+                if (statePayload != null) {
+                    send(player, ConstructStatePayload.TYPE, statePayload);
+                }
+                if (moved) {
                     send(player, ConstructTransformPayload.TYPE, new ConstructTransformPayload(
                             construct.id(), construct.x(), construct.y(), construct.z()));
                 }
             }
             construct.clearStructureDirty();
+            construct.clearStateDirty();
         }
+    }
+
+    private static ConstructStatePayload statePayloadFor(PhysicsConstruct construct) {
+        return new ConstructStatePayload(
+                construct.id(),
+                construct.enginePowerStep(),
+                construct.engineMode() == PhysicsConstruct.EngineMode.AIRCRAFT,
+                construct.netThrottle(),
+                construct.netSteer());
     }
 
     private static void sendFullState(ServerPlayer player, PhysicsConstruct construct) {

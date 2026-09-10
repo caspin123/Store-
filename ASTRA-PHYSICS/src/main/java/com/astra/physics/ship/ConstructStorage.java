@@ -75,10 +75,10 @@ public final class ConstructStorage {
                     StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
 
             AstraPhysics.LOGGER.debug("Saved {} ASTRA construct(s) for {}",
-                    snapshot.size(), level.dimension().location());
+                    snapshot.size(), level.dimension().identifier());
         } catch (IOException ex) {
             AstraPhysics.LOGGER.error("Failed to save ASTRA constructs for {}. "
-                    + "The previous save file was left in place.", level.dimension().location(), ex);
+                    + "The previous save file was left in place.", level.dimension().identifier(), ex);
         }
     }
 
@@ -96,7 +96,7 @@ public final class ConstructStorage {
                 AstraPhysics.LOGGER.error(
                         "ASTRA construct file for {} has format version {}, but this build reads version {}. "
                                 + "Refusing to load so the file is not overwritten with a bad interpretation.",
-                        level.dimension().location(), version, FORMAT_VERSION);
+                        level.dimension().identifier(), version, FORMAT_VERSION);
                 return List.of();
             }
 
@@ -109,17 +109,17 @@ public final class ConstructStorage {
                 }
             }
             AstraPhysics.LOGGER.info("Loaded {} ASTRA construct(s) for {}",
-                    loaded.size(), level.dimension().location());
+                    loaded.size(), level.dimension().identifier());
             return loaded;
 
         } catch (EOFException ex) {
             AstraPhysics.LOGGER.error("ASTRA construct file for {} is truncated. "
                     + "Any constructs after the damaged point were not loaded.",
-                    level.dimension().location(), ex);
+                    level.dimension().identifier(), ex);
             return List.of();
         } catch (IOException | RuntimeException ex) {
             AstraPhysics.LOGGER.error("Failed to load ASTRA constructs for {}",
-                    level.dimension().location(), ex);
+                    level.dimension().identifier(), ex);
             return List.of();
         }
     }
@@ -224,7 +224,7 @@ public final class ConstructStorage {
 
     private static Path fileFor(ServerLevel level) {
         MinecraftServer server = level.getServer();
-        String dimension = level.dimension().location().toString()
+        String dimension = level.dimension().identifier().toString()
                 .replace(':', '.')
                 .replace('/', '.');
         return server.getWorldPath(LevelResource.ROOT)

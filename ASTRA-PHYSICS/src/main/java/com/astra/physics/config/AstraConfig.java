@@ -47,8 +47,13 @@ public final class AstraConfig {
     public double airDamping = 0.997;
     /** Upward force contributed by one fully submerged block, before mass division. */
     public double buoyancyPerBlock = 0.180;
-    /** Blocks sampled per tick when measuring how deep the hull sits. */
-    public int buoyancySampleBudget = 512;
+    /**
+     * Blocks sampled per tick when measuring how deep the hull sits. Each sampled block is
+     * probed at eight heights, so this is a budget of roughly eight times as many fluid
+     * lookups. Vertical resolution matters far more than breadth here: a coarse waterline
+     * reading is what the solver ends up chasing.
+     */
+    public int buoyancySampleBudget = 320;
 
     public double maxMarineSpeed = 0.30;
     public double maxSailSpeed = 0.17;

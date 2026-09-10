@@ -1,5 +1,28 @@
 # Changelog
 
+## 0.1.1-alpha
+
+Follow-up to the 0.1.0 overhaul, fixing three problems found in play testing on 1.21.11.
+
+- **Hulls bobbed in water, by up to a full block, forever.** Buoyancy is a spring — displacing
+  the hull changes how much of it is submerged, which changes the force pushing it back — and it
+  had no matching damping term, so it simply oscillated. Damping is now derived from the spring's
+  own stiffness, which keeps it near critical for any hull height instead of being one constant
+  tuned against one boat. The waterline is also sampled at eight heights instead of four and
+  filtered with less lag, since lag in a feedback loop is itself a source of oscillation.
+  Measured vertical movement after settling drops from 0.5–1.9 blocks to 0.006–0.12.
+- **The pilot's camera was still locked.** 0.1.0 stopped the *server* re-applying the helm's
+  facing every tick but left the same two lines in the client's per-tick anchor, so nothing
+  changed in play. The client no longer touches yaw or pitch at all.
+- **The sail was visibly broken.** Its four panels left a two unit hole in the middle of the
+  canvas, and the spars hung inconsistently — some below their panel, some above it. The sail is
+  now one continuous stack of overlapping bands with the boom and gaff following the cloth they
+  carry.
+
+Build fixes for 1.21.11 contributed by the author are folded in: the command permission API,
+`ResourceKey.identifier()`, `getScoreboardName()`, and container persistence through
+`ItemStack.CODEC` with `RegistryOps`.
+
 ## 0.1.0-alpha
 
 Overhaul of the 0.0.10-alpha prototype.

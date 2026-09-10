@@ -234,8 +234,8 @@ public final class PhysicsConstructManager {
                 stored.size(), blockEntityCount, construct.engineCount(), construct.propellerCount(),
                 construct.sailCount(), construct.wingCount(), construct.thrusterCount()));
         AstraPhysics.LOGGER.info("{} assembled ASTRA construct {} with {} blocks and {} BlockEntities in {}",
-                player.getGameProfile().getName(), id, stored.size(), blockEntityCount,
-                serverLevel.dimension().location());
+                player.getName().getString(), id, stored.size(), blockEntityCount,
+                serverLevel.dimension());
 
         saveLevel(serverLevel);
         return true;

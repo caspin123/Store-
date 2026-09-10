@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "astra_physics:block/propeller"
+    },
+    "facing=east": {
+      "model": "astra_physics:block/propeller",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "astra_physics:block/propeller",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "astra_physics:block/propeller",
+      "y": 270
+    }
+  }
+}

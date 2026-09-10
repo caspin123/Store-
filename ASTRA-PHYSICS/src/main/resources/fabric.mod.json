@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "id": "astra_physics",
+  "version": "${version}",
+  "name": "ASTRA Physics",
+  "description": "Pure-Java ASTRA moving constructs with smooth water interpolation, configurable marine/aircraft engines, buoyancy, helm control and Android ARM64-focused rendering.",
+  "authors": [
+    "ASTRA"
+  ],
+  "license": "All-Rights-Reserved",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "com.astra.physics.AstraPhysics"
+    ],
+    "client": [
+      "com.astra.physics.client.AstraPhysicsClient"
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=0.18.2",
+    "minecraft": "~1.21.11",
+    "java": ">=21",
+    "fabric-api": "*"
+  },
+  "icon": "assets/astra_physics/icon.png",
+  "mixins": [
+    {
+      "config": "astra_physics.client.mixins.json",
+      "environment": "client"
+    }
+  ]
+}

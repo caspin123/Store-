@@ -1,0 +1,12 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "com.astra.physics.mixin.client",
+  "compatibilityLevel": "JAVA_21",
+  "client": [
+    "MinecraftUseMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

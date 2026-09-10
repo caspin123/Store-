@@ -1,0 +1,49 @@
+{
+  "variants": {
+    "facing=north,steer=0": {
+      "model": "astra_physics:block/helm_left"
+    },
+    "facing=north,steer=1": {
+      "model": "astra_physics:block/helm"
+    },
+    "facing=north,steer=2": {
+      "model": "astra_physics:block/helm_right"
+    },
+    "facing=east,steer=0": {
+      "model": "astra_physics:block/helm_left",
+      "y": 90
+    },
+    "facing=east,steer=1": {
+      "model": "astra_physics:block/helm",
+      "y": 90
+    },
+    "facing=east,steer=2": {
+      "model": "astra_physics:block/helm_right",
+      "y": 90
+    },
+    "facing=south,steer=0": {
+      "model": "astra_physics:block/helm_left",
+      "y": 180
+    },
+    "facing=south,steer=1": {
+      "model": "astra_physics:block/helm",
+      "y": 180
+    },
+    "facing=south,steer=2": {
+      "model": "astra_physics:block/helm_right",
+      "y": 180
+    },
+    "facing=west,steer=0": {
+      "model": "astra_physics:block/helm_left",
+      "y": 270
+    },
+    "facing=west,steer=1": {
+      "model": "astra_physics:block/helm",
+      "y": 270
+    },
+    "facing=west,steer=2": {
+      "model": "astra_physics:block/helm_right",
+      "y": 270
+    }
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "itemGroup.astra_physics": "ASTRA Physics",
+  "item.astra_physics.physics_wand": "عصا ASTRA الفيزيائية",
+  "block.astra_physics.helm": "دفة ASTRA",
+  "block.astra_physics.engine": "محرك ASTRA",
+  "block.astra_physics.propeller": "مروحة ASTRA",
+  "block.astra_physics.sail": "شراع ASTRA",
+  "block.astra_physics.wing": "جناح ASTRA",
+  "block.astra_physics.thruster": "دافع ASTRA"
+}

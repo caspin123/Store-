@@ -1,0 +1,10 @@
+{
+  "itemGroup.astra_physics": "ASTRA Physics",
+  "item.astra_physics.physics_wand": "ASTRA Physics Wand",
+  "block.astra_physics.helm": "ASTRA Helm",
+  "block.astra_physics.engine": "ASTRA Engine",
+  "block.astra_physics.propeller": "ASTRA Propeller",
+  "block.astra_physics.sail": "ASTRA Sail",
+  "block.astra_physics.wing": "ASTRA Wing",
+  "block.astra_physics.thruster": "ASTRA Thruster"
+}

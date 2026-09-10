@@ -81,50 +81,70 @@ def helm_frame(angle):
 # --------------------------------------------------------------------- sail
 
 SAIL_FRAMES = 4
-# Panel corners: (y_bottom, y_top, x_outer) - the sail tapers toward the top.
-SAIL_PANELS = ((7.6, 12.4, 26.5), (12.4, 17.2, 24.5), (19.2, 23.6, 22.5), (23.6, 28.0, 19.5))
+SAIL_BANDS = 8
+SAIL_BOTTOM = 7.5
+SAIL_TOP = 29.5
+SAIL_LUFF = 9.0        # the edge against the mast
+SAIL_FOOT_LEECH = 27.0  # trailing edge at the boom
+SAIL_HEAD_LEECH = 19.0  # trailing edge at the head, giving the sail its taper
 
 
 def sail_frame(frame):
-    """A gaff rig whose cloth bellies out in a wave travelling up the sail.
+    """A gaff rig whose canvas bellies in a wave travelling up the sail.
 
-    Each panel is three strips at slightly different depths, so the canvas reads
-    as a curved surface catching wind rather than a flat sheet.
+    The sail is one continuous stack of bands rather than separate panels. An earlier
+    version left a two unit hole in the middle of the canvas and hung its spars
+    inconsistently - some below their panel, some above it - which is what made the
+    rig look broken. Bands overlap slightly in Y so no seam can open up, and the
+    billow shifts only a little from one band to the next so the surface reads as
+    curved cloth instead of a stack of loose slabs.
     """
     phase = frame / SAIL_FRAMES * math.tau
+    band_height = (SAIL_TOP - SAIL_BOTTOM) / SAIL_BANDS
+
     elements = [
+        # mast step and mast
         box((5, 0, 5), (11, 3.5, 11), "dark"),
         box((5.8, 3.5, 5.8), (10.2, 5.5, 10.2), "brass"),
         box((7, 4, 7), (9, 32, 9), "wood"),
         box((6.5, 5.5, 6.5), (9.5, 8.0, 9.5), "brass"),
-        box((6.5, 17.0, 6.5), (9.5, 19.0, 9.5), "brass"),
-        box((6.5, 28.0, 6.5), (9.5, 30.5, 9.5), "brass"),
-        box((7, 30.5, 7), (9, 32, 9), "brass"),
+        box((6.5, 18.0, 6.5), (9.5, 20.0, 9.5), "brass"),
+        box((6.5, 29.0, 6.5), (9.5, 31.0, 9.5), "brass"),
         box((7.2, 1.6, 4.6), (8.8, 3.4, 5.2), "cyan", shade=False),
     ]
 
-    # spars
-    for (y_bottom, _y_top, x_outer), spar_y in zip(SAIL_PANELS, (5.6, 17.2, 19.2, 28.0)):
-        elements.append(box((8, spar_y, 7.1), (x_outer + 0.8, spar_y + 1.9, 8.9), "wood"))
+    def leech_at(height):
+        """Trailing edge X at a given height, tapering from foot to head."""
+        t = (height - SAIL_BOTTOM) / (SAIL_TOP - SAIL_BOTTOM)
+        return SAIL_FOOT_LEECH + (SAIL_HEAD_LEECH - SAIL_FOOT_LEECH) * t
 
-    # cloth, three strips per panel
-    for panel_index, (y_bottom, y_top, x_outer) in enumerate(SAIL_PANELS):
-        span = x_outer - 9.0
-        for strip in range(3):
-            x0 = 9.0 + span * strip / 3.0
-            x1 = 9.0 + span * (strip + 1) / 3.0
-            # Belly grows toward the middle of the panel and travels with the phase.
-            belly = math.sin(phase + panel_index * 0.8 + strip * 0.9)
-            depth = 0.55 + 0.75 * (1.0 - abs(strip - 1.0))
-            centre = 8.0 + belly * depth
-            elements.append(box((x0, y_bottom, centre - 0.55), (x1, y_top, centre + 0.55), "cloth"))
+    def belly_at(band):
+        """How far the canvas bows out of the mast plane, as a wave up the sail."""
+        return math.sin(phase + band * 0.45) * 1.15
 
-    # leech rope down the trailing edge, following the same wave
-    for panel_index, (y_bottom, y_top, x_outer) in enumerate(SAIL_PANELS):
-        belly = math.sin(phase + panel_index * 0.8 + 2.7)
-        centre = 8.0 + belly * 0.55
-        elements.append(box((x_outer - 0.9, y_bottom, centre - 0.45),
-                            (x_outer + 0.7, y_top, centre + 0.45), "wood"))
+    # boom and gaff, following the canvas they carry
+    boom_centre = 8.0 + belly_at(0) * 0.35
+    head_centre = 8.0 + belly_at(SAIL_BANDS - 1) * 0.35
+    elements.append(box((8, SAIL_BOTTOM - 1.9, boom_centre - 0.9),
+                        (SAIL_FOOT_LEECH + 0.8, SAIL_BOTTOM - 0.1, boom_centre + 0.9), "wood"))
+    elements.append(box((8, SAIL_TOP + 0.1, head_centre - 0.9),
+                        (SAIL_HEAD_LEECH + 0.8, SAIL_TOP + 1.9, head_centre + 0.9), "wood"))
+
+    for band in range(SAIL_BANDS):
+        y0 = SAIL_BOTTOM + band * band_height
+        # Bands overlap so a seam can never open between them.
+        y1 = y0 + band_height + 0.12
+        centre = 8.0 + belly_at(band)
+        outer = leech_at(y1)
+
+        elements.append(box((SAIL_LUFF, y0, centre - 0.5), (outer, y1, centre + 0.5), "cloth"))
+        # leech rope down the trailing edge, riding the same curve
+        elements.append(box((outer - 0.8, y0, centre - 0.65),
+                            (outer + 0.6, y1, centre + 0.65), "wood"))
+        # a batten every other band stiffens the cloth and catches the light
+        if band % 2 == 1:
+            elements.append(box((SAIL_LUFF + 0.4, y0 + band_height * 0.45, centre - 0.7),
+                                (outer - 0.6, y0 + band_height * 0.45 + 0.7, centre + 0.7), "brass"))
 
     return model(elements)
 

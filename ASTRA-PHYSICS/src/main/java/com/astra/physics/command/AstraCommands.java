@@ -16,6 +16,7 @@ import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.permissions.Permissions;
 import net.minecraft.world.phys.Vec3;
 
 import com.astra.physics.config.AstraConfig;
@@ -43,7 +44,7 @@ public final class AstraCommands {
 
     private static void build(CommandDispatcher<CommandSourceStack> dispatcher) {
         dispatcher.register(Commands.literal("astra")
-                .requires(source -> source.hasPermission(OPERATOR_LEVEL))
+                .requires(source -> source.permissions().hasPermission(Permissions.COMMANDS_GAMEMASTER))
                 .then(Commands.literal("list").executes(AstraCommands::list))
                 .then(Commands.literal("info").executes(context -> info(context, null))
                         .then(Commands.argument("id", StringArgumentType.string())

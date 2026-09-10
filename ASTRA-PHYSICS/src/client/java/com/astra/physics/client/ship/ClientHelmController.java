@@ -144,8 +144,9 @@ public final class ClientHelmController {
         client.player.setDeltaMovement(Vec3.ZERO);
         client.player.setOnGround(true);
         client.player.resetFallDistance();
-        client.player.setYRot(facing.getOpposite().toYRot());
-        client.player.setXRot(8.0F);
+        // Deliberately does NOT touch yaw or pitch. Re-applying the helm's facing every tick
+        // pinned the camera so the pilot could not look around at all; the server already
+        // points the player at the wheel once, when they take it.
     }
 
     private static void requestRelease() {

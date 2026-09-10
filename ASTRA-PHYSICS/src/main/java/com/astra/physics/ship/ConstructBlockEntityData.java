@@ -8,11 +8,12 @@ import java.util.List;
 
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.NbtAccounter;
 import net.minecraft.nbt.NbtIo;
+import net.minecraft.nbt.NbtOps;
 import net.minecraft.nbt.Tag;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.resources.RegistryOps;
 import net.minecraft.world.Container;
 import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.item.ItemStack;
@@ -178,9 +179,18 @@ public final class ConstructBlockEntityData {
         out.writeBoolean(inventory != null);
         if (inventory != null) {
             out.writeInt(inventory.getContainerSize());
-            CompoundTag wrapper = new CompoundTag();
-            wrapper.put("Items", inventory.createTag(registries));
-            writeTag(out, wrapper);
+            var ops = RegistryOps.create(NbtOps.INSTANCE, registries);
+            for (int slot = 0; slot < inventory.getContainerSize(); slot++) {
+                ItemStack stack = inventory.getItem(slot);
+                out.writeBoolean(!stack.isEmpty());
+                if (!stack.isEmpty()) {
+                    Tag encoded = ItemStack.CODEC.encodeStart(ops, stack).getOrThrow();
+                    if (!(encoded instanceof CompoundTag compound)) {
+                        throw new IOException("ItemStack codec produced non-compound NBT for slot " + slot);
+                    }
+                    writeTag(out, compound);
+                }
+            }
         }
     }
 
@@ -195,11 +205,13 @@ public final class ConstructBlockEntityData {
         if (in.readBoolean()) {
             int size = Math.max(1, Math.min(in.readInt(), 8192));
             inventory = new SimpleContainer(size);
-            CompoundTag wrapper = readTag(in);
-            // CompoundTag#get is the raw accessor and stays stable across NBT API revisions.
-            Tag items = wrapper.get("Items");
-            if (items instanceof ListTag list) {
-                inventory.fromTag(list, registries);
+            var ops = RegistryOps.create(NbtOps.INSTANCE, registries);
+            for (int slot = 0; slot < size; slot++) {
+                if (in.readBoolean()) {
+                    CompoundTag stackTag = readTag(in);
+                    ItemStack stack = ItemStack.CODEC.parse(ops, stackTag).getOrThrow();
+                    inventory.setItem(slot, stack);
+                }
             }
         }
         return new ConstructBlockEntityData(kind, sourceClass, originalNbt, inventory, logicalSlots);

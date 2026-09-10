@@ -51,8 +51,11 @@ import com.astra.physics.registry.AstraBlocks;
  */
 public final class PhysicsConstruct {
     private static final double REST_EPSILON = 1.0E-5;
-    private static final int VERTICAL_SAMPLES_PER_BLOCK = 4;
-    private static final double[] SAMPLE_HEIGHTS = {0.15, 0.38, 0.62, 0.85};
+    // Eight sample heights rather than four: the measured waterline moves in steps of one
+    // sample, and a coarse step feeds the solver a jittery signal it then tries to correct.
+    private static final int VERTICAL_SAMPLES_PER_BLOCK = 8;
+    private static final double[] SAMPLE_HEIGHTS =
+            {0.07, 0.19, 0.31, 0.44, 0.56, 0.69, 0.81, 0.93};
     private static final Direction[] DIRECTIONS = Direction.values();
 
     /** How many ticks of helm input are honoured after the last control packet. */
@@ -374,9 +377,9 @@ public final class PhysicsConstruct {
         tickLocalHoppers(level, config);
 
         double rawSubmerged = sampleSubmergedFraction(level);
-        // The sampler moves in discrete quarter-block steps. Low-passing it before the solver
-        // sees it stops the hull alternating between too much and too little buoyancy.
-        submergedFraction += (rawSubmerged - submergedFraction) * 0.28;
+        // Low-pass the measurement, but only lightly. Filtering harder hides sampling noise at
+        // the cost of lag, and lag in a feedback loop is what turns a stable float into a bob.
+        submergedFraction += (rawSubmerged - submergedFraction) * 0.50;
         if (submergedFraction < 1.0E-4) {
             submergedFraction = 0.0;
         }
@@ -388,10 +391,15 @@ public final class PhysicsConstruct {
         // harder than forward motion, which removes tick-to-tick bobbing without making the
         // helm feel sluggish.
         double horizontalWaterDamping = 1.0 - Math.min(0.065, submergedFraction * 0.055);
-        double verticalWaterDamping = 1.0 - Math.min(0.34, submergedFraction * 0.30);
         vx *= config.airDamping * horizontalWaterDamping;
         vz *= config.airDamping * horizontalWaterDamping;
-        vy *= config.airDamping * verticalWaterDamping;
+        vy *= config.airDamping;
+
+        // A settled hull has to actually come to rest. A few thousandths of a block per tick
+        // is still a visible shimmer when it never stops.
+        if (submergedFraction > 0.05 && Math.abs(vy) < 0.0008) {
+            vy = 0.0;
+        }
 
         clampVelocity(config, submergedFraction);
 
@@ -695,11 +703,24 @@ public final class PhysicsConstruct {
         double displacedVolume = blocks.size() * submerged;
         vy += displacedVolume * config.buoyancyPerBlock / Math.max(1.0, mass);
 
-        // Waves must be visible without constantly kicking the hull sideways. Injecting X/Z
-        // velocity every tick was a major source of the old stutter, so heave is vertical only.
+        // Buoyancy is a spring: push the hull down and more of it goes under water, which
+        // pushes back harder. A spring with no damper oscillates forever, which is exactly what
+        // the hull did - it bobbed by up to a full block for as long as it floated.
+        //
+        // The damping is derived from the spring's own stiffness so it lands near critical for
+        // any hull, instead of being one constant tuned against one test boat. Stiffness falls
+        // as the hull gets taller, because moving a tall hull by one block changes how much of
+        // it is submerged by proportionally less.
+        double stiffness = config.buoyancyPerBlock / Math.max(1.0, sizeY());
+        double drag = Math.min(0.85, 1.8 * Math.sqrt(stiffness) * Math.min(1.0, submerged / 0.30));
+        vy -= vy * drag;
+
+        // With the bobbing gone, a deliberate heave is what keeps a floating hull from looking
+        // welded to the surface. It is vertical only: injecting X/Z velocity every tick was a
+        // major source of the old stutter.
         double time = level.getGameTime();
         double wave = Math.sin(time * 0.045 + wavePhase) + Math.sin(time * 0.021 + wavePhase * 1.73) * 0.45;
-        vy += wave * 0.00075 * submerged;
+        vy += wave * 0.0025 * submerged;
     }
 
     // --------------------------------------------------------------- propulsion

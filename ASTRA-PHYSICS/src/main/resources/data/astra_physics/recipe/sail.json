@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "group": "astra_physics",
+  "pattern": [
+    "CCC",
+    "CSC",
+    "/S/"
+  ],
+  "key": {
+    "C": "minecraft:white_wool",
+    "S": "minecraft:stick"
+  },
+  "result": {
+    "id": "astra_physics:sail",
+    "count": 1
+  }
+}

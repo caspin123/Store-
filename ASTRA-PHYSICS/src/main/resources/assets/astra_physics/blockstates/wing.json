@@ -1,0 +1,49 @@
+{
+  "variants": {
+    "facing=north,aileron=0": {
+      "model": "astra_physics:block/wing_0"
+    },
+    "facing=north,aileron=1": {
+      "model": "astra_physics:block/wing_1"
+    },
+    "facing=north,aileron=2": {
+      "model": "astra_physics:block/wing_2"
+    },
+    "facing=east,aileron=0": {
+      "model": "astra_physics:block/wing_0",
+      "y": 90
+    },
+    "facing=east,aileron=1": {
+      "model": "astra_physics:block/wing_1",
+      "y": 90
+    },
+    "facing=east,aileron=2": {
+      "model": "astra_physics:block/wing_2",
+      "y": 90
+    },
+    "facing=south,aileron=0": {
+      "model": "astra_physics:block/wing_0",
+      "y": 180
+    },
+    "facing=south,aileron=1": {
+      "model": "astra_physics:block/wing_1",
+      "y": 180
+    },
+    "facing=south,aileron=2": {
+      "model": "astra_physics:block/wing_2",
+      "y": 180
+    },
+    "facing=west,aileron=0": {
+      "model": "astra_physics:block/wing_0",
+      "y": 270
+    },
+    "facing=west,aileron=1": {
+      "model": "astra_physics:block/wing_1",
+      "y": 270
+    },
+    "facing=west,aileron=2": {
+      "model": "astra_physics:block/wing_2",
+      "y": 270
+    }
+  }
+}

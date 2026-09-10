@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "group": "astra_physics",
+  "pattern": [
+    "/ND",
+    "/SN",
+    "S//"
+  ],
+  "key": {
+    "N": "minecraft:amethyst_shard",
+    "D": "minecraft:diamond",
+    "S": "minecraft:stick"
+  },
+  "result": {
+    "id": "astra_physics:physics_wand",
+    "count": 1
+  }
+}

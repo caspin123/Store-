@@ -1,0 +1,64 @@
+{
+  "variants": {
+    "facing=north,spin=0": {
+      "model": "astra_physics:block/propeller_0"
+    },
+    "facing=north,spin=1": {
+      "model": "astra_physics:block/propeller_1"
+    },
+    "facing=north,spin=2": {
+      "model": "astra_physics:block/propeller_2"
+    },
+    "facing=north,spin=3": {
+      "model": "astra_physics:block/propeller_3"
+    },
+    "facing=east,spin=0": {
+      "model": "astra_physics:block/propeller_0",
+      "y": 90
+    },
+    "facing=east,spin=1": {
+      "model": "astra_physics:block/propeller_1",
+      "y": 90
+    },
+    "facing=east,spin=2": {
+      "model": "astra_physics:block/propeller_2",
+      "y": 90
+    },
+    "facing=east,spin=3": {
+      "model": "astra_physics:block/propeller_3",
+      "y": 90
+    },
+    "facing=south,spin=0": {
+      "model": "astra_physics:block/propeller_0",
+      "y": 180
+    },
+    "facing=south,spin=1": {
+      "model": "astra_physics:block/propeller_1",
+      "y": 180
+    },
+    "facing=south,spin=2": {
+      "model": "astra_physics:block/propeller_2",
+      "y": 180
+    },
+    "facing=south,spin=3": {
+      "model": "astra_physics:block/propeller_3",
+      "y": 180
+    },
+    "facing=west,spin=0": {
+      "model": "astra_physics:block/propeller_0",
+      "y": 270
+    },
+    "facing=west,spin=1": {
+      "model": "astra_physics:block/propeller_1",
+      "y": 270
+    },
+    "facing=west,spin=2": {
+      "model": "astra_physics:block/propeller_2",
+      "y": 270
+    },
+    "facing=west,spin=3": {
+      "model": "astra_physics:block/propeller_3",
+      "y": 270
+    }
+  }
+}

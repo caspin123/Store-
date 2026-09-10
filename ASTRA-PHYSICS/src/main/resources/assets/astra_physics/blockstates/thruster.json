@@ -1,0 +1,64 @@
+{
+  "variants": {
+    "facing=north,burn=0": {
+      "model": "astra_physics:block/thruster_0"
+    },
+    "facing=north,burn=1": {
+      "model": "astra_physics:block/thruster_1"
+    },
+    "facing=north,burn=2": {
+      "model": "astra_physics:block/thruster_2"
+    },
+    "facing=north,burn=3": {
+      "model": "astra_physics:block/thruster_3"
+    },
+    "facing=east,burn=0": {
+      "model": "astra_physics:block/thruster_0",
+      "y": 90
+    },
+    "facing=east,burn=1": {
+      "model": "astra_physics:block/thruster_1",
+      "y": 90
+    },
+    "facing=east,burn=2": {
+      "model": "astra_physics:block/thruster_2",
+      "y": 90
+    },
+    "facing=east,burn=3": {
+      "model": "astra_physics:block/thruster_3",
+      "y": 90
+    },
+    "facing=south,burn=0": {
+      "model": "astra_physics:block/thruster_0",
+      "y": 180
+    },
+    "facing=south,burn=1": {
+      "model": "astra_physics:block/thruster_1",
+      "y": 180
+    },
+    "facing=south,burn=2": {
+      "model": "astra_physics:block/thruster_2",
+      "y": 180
+    },
+    "facing=south,burn=3": {
+      "model": "astra_physics:block/thruster_3",
+      "y": 180
+    },
+    "facing=west,burn=0": {
+      "model": "astra_physics:block/thruster_0",
+      "y": 270
+    },
+    "facing=west,burn=1": {
+      "model": "astra_physics:block/thruster_1",
+      "y": 270
+    },
+    "facing=west,burn=2": {
+      "model": "astra_physics:block/thruster_2",
+      "y": 270
+    },
+    "facing=west,burn=3": {
+      "model": "astra_physics:block/thruster_3",
+      "y": 270
+    }
+  }
+}

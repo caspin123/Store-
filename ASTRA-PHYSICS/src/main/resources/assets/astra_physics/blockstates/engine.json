@@ -1,0 +1,64 @@
+{
+  "variants": {
+    "facing=north,stroke=0": {
+      "model": "astra_physics:block/engine_0"
+    },
+    "facing=north,stroke=1": {
+      "model": "astra_physics:block/engine_1"
+    },
+    "facing=north,stroke=2": {
+      "model": "astra_physics:block/engine_2"
+    },
+    "facing=north,stroke=3": {
+      "model": "astra_physics:block/engine_3"
+    },
+    "facing=east,stroke=0": {
+      "model": "astra_physics:block/engine_0",
+      "y": 90
+    },
+    "facing=east,stroke=1": {
+      "model": "astra_physics:block/engine_1",
+      "y": 90
+    },
+    "facing=east,stroke=2": {
+      "model": "astra_physics:block/engine_2",
+      "y": 90
+    },
+    "facing=east,stroke=3": {
+      "model": "astra_physics:block/engine_3",
+      "y": 90
+    },
+    "facing=south,stroke=0": {
+      "model": "astra_physics:block/engine_0",
+      "y": 180
+    },
+    "facing=south,stroke=1": {
+      "model": "astra_physics:block/engine_1",
+      "y": 180
+    },
+    "facing=south,stroke=2": {
+      "model": "astra_physics:block/engine_2",
+      "y": 180
+    },
+    "facing=south,stroke=3": {
+      "model": "astra_physics:block/engine_3",
+      "y": 180
+    },
+    "facing=west,stroke=0": {
+      "model": "astra_physics:block/engine_0",
+      "y": 270
+    },
+    "facing=west,stroke=1": {
+      "model": "astra_physics:block/engine_1",
+      "y": 270
+    },
+    "facing=west,stroke=2": {
+      "model": "astra_physics:block/engine_2",
+      "y": 270
+    },
+    "facing=west,stroke=3": {
+      "model": "astra_physics:block/engine_3",
+      "y": 270
+    }
+  }
+}

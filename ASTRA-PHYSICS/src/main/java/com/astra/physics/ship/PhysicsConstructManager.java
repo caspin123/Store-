@@ -402,15 +402,18 @@ public final class PhysicsConstructManager {
             return;
         }
 
-        BlockState state = orientPlacedState(blockItem.getBlock().defaultBlockState(), player, payload.face());
+        BlockState state = orientPlacedState(
+                blockItem.getBlock().defaultBlockState(), player, payload.face(), construct);
         if (state.isAir() || !state.getFluidState().isEmpty()) {
             AstraText.sendActionBar(player, AstraText.warning("place.fluid"));
             return;
         }
 
+        double targetCentreX = construct.toWorldX(targetX + 0.5, targetZ + 0.5);
+        double targetCentreZ = construct.toWorldZ(targetX + 0.5, targetZ + 0.5);
         AABB targetBox = new AABB(
-                construct.x() + targetX, construct.y() + targetY, construct.z() + targetZ,
-                construct.x() + targetX + 1.0, construct.y() + targetY + 1.0, construct.z() + targetZ + 1.0
+                targetCentreX - 0.5, construct.y() + targetY, targetCentreZ - 0.5,
+                targetCentreX + 0.5, construct.y() + targetY + 1.0, targetCentreZ + 0.5
         );
         if (!level.noBlockCollision(null, targetBox)) {
             AstraText.sendActionBar(player, AstraText.warning("place.through_terrain"));
@@ -605,7 +608,7 @@ public final class PhysicsConstructManager {
         if (!acceptControlPacket(level, session)) {
             return;
         }
-        construct.applyHelmInput(payload.safeThrottle(), payload.safeSteer());
+        construct.applyHelmInput(payload.safeThrottle(), payload.safeSteer(), payload.safeLift());
     }
 
     /**
@@ -724,7 +727,8 @@ public final class PhysicsConstructManager {
                 }
                 if (moved) {
                     send(player, ConstructTransformPayload.TYPE, new ConstructTransformPayload(
-                            construct.id(), construct.x(), construct.y(), construct.z()));
+                            construct.id(), construct.x(), construct.y(), construct.z(),
+                            (float) construct.yaw()));
                 }
             }
             construct.clearStructureDirty();
@@ -749,7 +753,7 @@ public final class PhysicsConstructManager {
                     Block.getId(block.state())));
         }
         send(player, ConstructSpawnPayload.TYPE, new ConstructSpawnPayload(
-                construct.id(), construct.x(), construct.y(), construct.z(),
+                construct.id(), construct.x(), construct.y(), construct.z(), (float) construct.yaw(),
                 construct.sizeX(), construct.sizeY(), construct.sizeZ(), List.copyOf(netBlocks)));
     }
 
@@ -808,11 +812,21 @@ public final class PhysicsConstructManager {
 
         // The wheel is modelled on the FACING side. 0.90 keeps the player's body outside the
         // helm's own cell while their hands and camera stay at the wheel.
+        // The standing spot is worked out in local space and then rotated, so the pilot stays at
+        // the wheel whichever way the ship is pointing.
+        double standLocalX = helm.localX() + 0.5 + facing.getStepX() * 0.90;
+        double standLocalZ = helm.localZ() + 0.5 + facing.getStepZ() * 0.90;
         player.setPos(
-                construct.x() + helm.localX() + 0.5 + facing.getStepX() * 0.90,
+                construct.toWorldX(standLocalX, standLocalZ),
                 construct.y() + helm.localY(),
-                construct.z() + helm.localZ() + 0.5 + facing.getStepZ() * 0.90
+                construct.toWorldZ(standLocalX, standLocalZ)
         );
+        // Turning the ship turns the pilot with it, so the view stays fixed relative to the deck
+        // rather than the world - otherwise a turn would swing the horizon past a motionless head.
+        double yawDelta = construct.deltaYaw();
+        if (Math.abs(yawDelta) > 1.0E-4) {
+            player.setYRot((float) (player.getYRot() + yawDelta));
+        }
         player.setDeltaMovement(Vec3.ZERO);
         player.setOnGround(true);
         player.resetFallDistance();
@@ -837,8 +851,13 @@ public final class PhysicsConstructManager {
                 continue;
             }
 
-            double carriedX = player.getX() + construct.deltaX();
-            double carriedZ = player.getZ() + construct.deltaZ();
+            // Where the rider stood on the deck last tick, mapped to where that same deck spot
+            // is now. A plain position delta would carry them along a translation but leave them
+            // behind when the hull turned under their feet.
+            double localX = construct.previousToLocalX(player.getX(), player.getZ());
+            double localZ = construct.previousToLocalZ(player.getX(), player.getZ());
+            double carriedX = construct.toWorldX(localX, localZ);
+            double carriedZ = construct.toWorldZ(localX, localZ);
             double currentTop = construct.supportSurfaceY(
                     carriedX, carriedZ, player.getY() + construct.deltaY(), false);
             if (Double.isNaN(currentTop)) {
@@ -846,6 +865,10 @@ public final class PhysicsConstructManager {
             }
 
             player.setPos(carriedX, currentTop, carriedZ);
+            double yawDelta = construct.deltaYaw();
+            if (Math.abs(yawDelta) > 1.0E-4) {
+                player.setYRot((float) (player.getYRot() + yawDelta));
+            }
             resolveHorizontalCollisions(player, construct);
             player.setOnGround(true);
             player.resetFallDistance();
@@ -865,10 +888,10 @@ public final class PhysicsConstructManager {
      */
     private static void resolveHorizontalCollisions(ServerPlayer player, PhysicsConstruct construct) {
         for (StoredBlock block : construct.blocksNear(player.getX(), player.getZ())) {
-            double bx0 = construct.x() + block.localX();
+            double cx = construct.toWorldX(block.localX() + 0.5, block.localZ() + 0.5);
+            double cz = construct.toWorldZ(block.localX() + 0.5, block.localZ() + 0.5);
             double by0 = construct.y() + block.localY();
-            double bz0 = construct.z() + block.localZ();
-            AABB blockBox = new AABB(bx0, by0, bz0, bx0 + 1.0, by0 + 1.0, bz0 + 1.0);
+            AABB blockBox = new AABB(cx - 0.5, by0, cz - 0.5, cx + 0.5, by0 + 1.0, cz + 0.5);
             AABB playerBox = player.getBoundingBox();
             if (!playerBox.intersects(blockBox)) {
                 continue;
@@ -899,8 +922,12 @@ public final class PhysicsConstructManager {
      * be pointed at construct-local coordinates yet, so the common direction properties are
      * preserved explicitly until a real ShipLevel exists.
      */
-    private static BlockState orientPlacedState(BlockState state, ServerPlayer player, Direction hitFace) {
-        Direction horizontal = Direction.fromYRot(player.getYRot()).getOpposite();
+    private static BlockState orientPlacedState(BlockState state, ServerPlayer player,
+                                                Direction hitFace, PhysicsConstruct construct) {
+        // Blocks are stored in the hull's own space, so "the way the player is facing" has to be
+        // expressed there as well. Without subtracting the hull's yaw, a block placed on a turned
+        // ship would point somewhere else entirely once the ship straightened out.
+        Direction horizontal = Direction.fromYRot(player.getYRot() - construct.yaw()).getOpposite();
 
         if (state.hasProperty(AstraFacingBlock.FACING)) {
             // Edge-mounted parts should point away from the face they were attached to.
@@ -963,9 +990,9 @@ public final class PhysicsConstructManager {
         // client sending the packet and the server handling it.
         double allowed = (reach + 2.0) * (reach + 2.0);
         return player.getEyePosition().distanceToSqr(
-                construct.x() + localX + 0.5,
+                construct.toWorldX(localX + 0.5, localZ + 0.5),
                 construct.y() + localY + 0.5,
-                construct.z() + localZ + 0.5) <= allowed;
+                construct.toWorldZ(localX + 0.5, localZ + 0.5)) <= allowed;
     }
 
     private static void openLocalContainer(ServerPlayer player, ConstructBlockEntityData data, Component blockName) {

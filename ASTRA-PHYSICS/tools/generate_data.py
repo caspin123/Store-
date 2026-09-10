@@ -31,6 +31,9 @@ ENGLISH = {
 
     "message.astra_physics.prefix": "ASTRA ",
 
+    "key.categories.astra_physics": "ASTRA Physics",
+    "key.astra_physics.leave_helm": "Leave Helm",
+
     "message.astra_physics.selection.point1":
         "Point 1 set at %s. Right-click point 2, or sneak + right-click to clear.",
     "message.astra_physics.selection.too_large":
@@ -79,7 +82,7 @@ ENGLISH = {
     "message.astra_physics.drive.sail": "sail drive",
     "message.astra_physics.drive.none": "no propulsion",
     "message.astra_physics.helm.engaged":
-        "At the helm with %s. W and S for throttle, A and D to steer, sneak or jump to let go.",
+        "At the helm with %s. W and S drive, A and D turn the ship, jump and sneak climb and dive, G lets go.",
     "message.astra_physics.helm.released": "Helm released. Walking restored.",
     "message.astra_physics.helm.occupied": "Another pilot is already at this helm.",
 
@@ -121,6 +124,9 @@ ARABIC = {
     "block.astra_physics.thruster": "دافع ASTRA",
 
     "message.astra_physics.prefix": "ASTRA ",
+
+    "key.categories.astra_physics": "ASTRA Physics",
+    "key.astra_physics.leave_helm": "ترك الدفة",
 
     "message.astra_physics.selection.point1":
         "تم تحديد النقطة الأولى عند %s. اضغط يمين على النقطة الثانية، أو تسلل + يمين للمسح.",
@@ -169,7 +175,7 @@ ARABIC = {
     "message.astra_physics.drive.sail": "دفع شراعي",
     "message.astra_physics.drive.none": "بدون دفع",
     "message.astra_physics.helm.engaged":
-        "أنت على الدفة مع %s. W و S للسرعة، A و D للتوجيه، تسلل أو قفز للترك.",
+        "أنت على الدفة مع %s. W و S للسرعة، A و D لتدوير السفينة، قفز وتسلل للصعود والنزول، G للترك.",
     "message.astra_physics.helm.released": "تم ترك الدفة. عاد المشي طبيعياً.",
     "message.astra_physics.helm.occupied": "يوجد قائد آخر على هذه الدفة.",
 

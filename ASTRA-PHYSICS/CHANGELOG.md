@@ -1,5 +1,50 @@
 # Changelog
 
+## 0.2.0-alpha
+
+Ships now turn.
+
+### Yaw rotation
+
+Constructs were translation only, so A and D shoved the hull sideways instead of steering it —
+and an aircraft could not be pointed anywhere, which made flight unusable in practice. Constructs
+now carry a heading, and A and D apply real turning force while W and S drive along whatever
+direction the bow is pointing.
+
+Rotation touches every consumer of geometry, and all of them go through one pair of transforms so
+the hitbox can never drift away from the hull you can see: rendering, raycasting, terrain
+collision, buoyancy sampling, deck support, rider carrying and block placement. The transform math
+was checked against a standalone test — round trips at many angles and offsets, rotation about the
+hull's own centre rather than its origin corner, and preservation of distance — before it went
+anywhere near the mod.
+
+Details worth knowing:
+
+- A rudder needs water flowing past it, so a boat has to be moving before it will turn. An
+  aircraft keeps some authority when slow, because its control surfaces work off thrust.
+- A turn that would sweep the hull through terrain is refused outright rather than applied
+  partway, so the hull is never left inside a wall.
+- A rotated block is tested as the box that encloses it, which is about 1.41 blocks across at 45
+  degrees. Contact is therefore slightly early at intermediate angles — the safe direction, since
+  the alternative is a hull visibly sinking into a cliff.
+- Riders are carried by mapping where they stood on last tick's deck onto this tick's deck, which
+  covers turning as well as travel, and they turn with the ship so the horizon does not swing past
+  a motionless head.
+
+### Vertical control
+
+Thrusters only responded to forward throttle, so there was no way to climb or dive. Jump and sneak
+are now climb and dive. Those keys used to be how a pilot let go of the wheel, which cannot work on
+an aircraft, so leaving the helm moved to a dedicated key (G by default) — right-clicking the wheel
+still works too.
+
+### Fixed
+
+- **Piloting shook constantly.** The ship is drawn interpolated between two network snapshots, but
+  the pilot was placed on the newest snapshot outright, so the deck they saw and the spot they
+  stood on disagreed by up to a tick of travel, every tick. The camera now interpolates along
+  exactly the path the hull is drawn along.
+
 ## 0.1.1-alpha
 
 Follow-up to the 0.1.0 overhaul, fixing three problems found in play testing on 1.21.11.

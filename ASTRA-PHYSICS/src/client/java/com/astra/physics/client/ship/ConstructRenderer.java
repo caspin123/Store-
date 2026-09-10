@@ -1,6 +1,7 @@
 package com.astra.physics.client.ship;
 
 import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.math.Axis;
 
 import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderContext;
 
@@ -62,8 +63,14 @@ public final class ConstructRenderer {
             }
 
             float steer = steerOf(construct);
+            float renderYaw = (float) construct.renderYaw(alpha);
+
             matrices.pushPose();
             matrices.translate(baseX - camera.x, baseY - camera.y, baseZ - camera.z);
+            // Turn about the hull's own centre, matching the pivot the server collides around.
+            matrices.translate(construct.pivotX(), 0.0, construct.pivotZ());
+            matrices.mulPose(Axis.YP.rotationDegrees(renderYaw));
+            matrices.translate(-construct.pivotX(), 0.0, -construct.pivotZ());
 
             for (ClientPhysicsConstruct.ClientBlock block : construct.visibleBlocks()) {
                 if (budget-- <= 0) {
@@ -74,7 +81,9 @@ public final class ConstructRenderer {
 
                 BlockState renderState = animate(block.state(), construct, steer, seconds);
                 int light = lightAt(minecraft, config,
-                        baseX + block.localX(), baseY + block.localY(), baseZ + block.localZ());
+                        construct.renderToWorldX(block.localX() + 0.5, block.localZ() + 0.5, alpha),
+                        baseY + block.localY(),
+                        construct.renderToWorldZ(block.localX() + 0.5, block.localZ() + 0.5, alpha));
 
                 minecraft.getBlockRenderer().renderSingleBlock(
                         renderState, matrices, context.consumers(), light, OverlayTexture.NO_OVERLAY);

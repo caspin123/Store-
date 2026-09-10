@@ -40,6 +40,8 @@ public final class AstraPhysicsClient implements ClientModInitializer {
 
     @Override
     public void onInitializeClient() {
+        AstraKeys.register();
+
         // The wand still targets real Minecraft blocks through Fabric's normal block-use callback.
         // Moving ASTRA construct blocks are NOT real Level blocks after assembly, so their use input
         // is intercepted at Minecraft.startUseItem() by MinecraftUseMixin instead. This is required

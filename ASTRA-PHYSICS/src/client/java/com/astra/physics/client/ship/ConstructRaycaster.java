@@ -18,26 +18,41 @@ public final class ConstructRaycaster {
         double bestDistanceSq = Double.POSITIVE_INFINITY;
 
         for (ClientPhysicsConstruct construct : ClientConstructManager.all()) {
-            double baseX = construct.x();
-            double baseY = construct.y();
-            double baseZ = construct.z();
+            // Rotating the ray into the hull's own space is exact and cheap; rotating every
+            // block's box into world space would be neither, and the boxes would no longer be
+            // axis aligned for AABB#clip to use.
+            Vec3 localStart = new Vec3(
+                    construct.toLocalX(start.x, start.z),
+                    start.y - construct.y(),
+                    construct.toLocalZ(start.x, start.z));
+            Vec3 localEnd = new Vec3(
+                    construct.toLocalX(end.x, end.z),
+                    end.y - construct.y(),
+                    construct.toLocalZ(end.x, end.z));
+
             for (ClientPhysicsConstruct.ClientBlock block : construct.blocks()) {
                 AABB box = new AABB(
-                        baseX + block.localX(), baseY + block.localY(), baseZ + block.localZ(),
-                        baseX + block.localX() + 1.0, baseY + block.localY() + 1.0, baseZ + block.localZ() + 1.0
+                        block.localX(), block.localY(), block.localZ(),
+                        block.localX() + 1.0, block.localY() + 1.0, block.localZ() + 1.0
                 );
-                Optional<Vec3> clipped = box.clip(start, end);
+                Optional<Vec3> clipped = box.clip(localStart, localEnd);
                 if (clipped.isEmpty()) {
                     continue;
                 }
-                Vec3 hitPoint = clipped.get();
-                double distanceSq = start.distanceToSqr(hitPoint);
+                Vec3 localHit = clipped.get();
+                Vec3 worldHit = new Vec3(
+                        construct.toWorldX(localHit.x, localHit.z),
+                        localHit.y + construct.y(),
+                        construct.toWorldZ(localHit.x, localHit.z));
+                double distanceSq = start.distanceToSqr(worldHit);
                 if (distanceSq >= bestDistanceSq) {
                     continue;
                 }
-                Direction face = closestFace(box, hitPoint);
+                // The face is resolved in local space, so it names the hull's own side and can
+                // be used directly as a local placement direction.
+                Direction face = closestFace(box, localHit);
                 bestDistanceSq = distanceSq;
-                best = new Hit(construct, block, face, hitPoint, distanceSq);
+                best = new Hit(construct, block, face, worldHit, distanceSq);
             }
         }
         return best;

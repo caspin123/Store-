@@ -37,8 +37,12 @@ public final class ClientMovingPlatformSupport {
                 continue;
             }
 
-            double carriedX = player.getX() + construct.deltaX();
-            double carriedZ = player.getZ() + construct.deltaZ();
+            // Same rule as the server: map the rider's spot on last tick's deck onto this
+            // tick's deck, which covers turning as well as translation.
+            double localX = construct.toLocalX(player.getX(), player.getZ());
+            double localZ = construct.toLocalZ(player.getX(), player.getZ());
+            double carriedX = construct.toWorldX(localX, localZ) + construct.deltaX();
+            double carriedZ = construct.toWorldZ(localX, localZ) + construct.deltaZ();
             double currentTop = construct.supportSurfaceY(carriedX, carriedZ, player.getY() + construct.deltaY(), false);
             if (Double.isNaN(currentTop)) {
                 continue;
@@ -57,11 +61,11 @@ public final class ClientMovingPlatformSupport {
 
     private static void resolveHorizontalConstructCollisions(Player player, ClientPhysicsConstruct construct) {
         for (ClientPhysicsConstruct.ClientBlock block : construct.blocks()) {
-            double bx0 = construct.x() + block.localX();
+            double cx = construct.toWorldX(block.localX() + 0.5, block.localZ() + 0.5);
+            double cz = construct.toWorldZ(block.localX() + 0.5, block.localZ() + 0.5);
             double by0 = construct.y() + block.localY();
-            double bz0 = construct.z() + block.localZ();
             net.minecraft.world.phys.AABB blockBox = new net.minecraft.world.phys.AABB(
-                    bx0, by0, bz0, bx0 + 1.0, by0 + 1.0, bz0 + 1.0
+                    cx - 0.5, by0, cz - 0.5, cx + 0.5, by0 + 1.0, cz + 0.5
             );
             net.minecraft.world.phys.AABB playerBox = player.getBoundingBox();
             if (!playerBox.intersects(blockBox)) continue;

@@ -25,8 +25,9 @@ still, and a thruster only burns on forward throttle.
 1. Craft the **ASTRA Physics Wand**.
 2. Right-click one corner of your build, then the opposite corner.
 3. Right-click a third time to assemble. The blocks leave the world and become a construct.
-4. Right-click a **Helm** to take the wheel: `W`/`S` throttle, `A`/`D` steer, sneak or jump to
-   let go. You keep full control of the camera while piloting.
+4. Right-click a **Helm** to take the wheel: `W`/`S` drive, `A`/`D` turn the ship, jump and sneak
+   climb and dive, `G` lets go (right-clicking the wheel again also works). You keep full control
+   of the camera while piloting.
 5. `/astra disassemble` turns a construct back into ordinary world blocks.
 
 The selection must be one connected group of blocks, and you must be allowed to build there —
@@ -88,9 +89,9 @@ spinning flywheel — is placed at the nearest quarter turn with the remainder a
 
 These are honest gaps, not bugs:
 
-- **No yaw rotation.** Constructs translate only. Steering is modelled as rudder thrust, because a
-  hull that turned visually would leave its collision volume behind — every other system assumes
-  local space stays axis-aligned with the world.
+- **Rotation is yaw only.** Constructs turn about the vertical axis; they do not pitch or roll.
+  Terrain contact at intermediate angles is slightly early, because a rotated block is tested as
+  the box enclosing it.
 - **Block entities keep their data but do not tick.** Chests, barrels, furnaces and hoppers work
   as storage aboard, and construct-local hoppers move items between them. Furnaces do not smelt
   and modded machines do not run until a real ShipLevel exists.

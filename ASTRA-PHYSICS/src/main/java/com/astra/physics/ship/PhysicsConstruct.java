@@ -61,6 +61,9 @@ public final class PhysicsConstruct {
     /** How many ticks of helm input are honoured after the last control packet. */
     private static final int CONTROL_GRACE_TICKS = 8;
 
+    /** Degrees per tick. Roughly a full turn in three seconds at the limit. */
+    private static final double MAX_YAW_SPEED = 6.0;
+
     public enum EngineMode { MARINE, AIRCRAFT }
 
     private final UUID id;
@@ -71,6 +74,8 @@ public final class PhysicsConstruct {
     // ---- caches rebuilt only when the block set changes
     private final List<StoredBlock>[] collisionShell = newShellArray();
     private final List<StoredBlock> componentBlocks = new ArrayList<>();
+    /** Blocks with at least one exposed face, tested when the hull turns in place. */
+    private List<StoredBlock> outerShell = List.of();
     private final List<StoredBlock> hopperBlocks = new ArrayList<>();
     private final List<StoredBlock> buoyancySamples = new ArrayList<>();
     private final Map<Long, List<StoredBlock>> columnIndex = new HashMap<>();
@@ -96,6 +101,21 @@ public final class PhysicsConstruct {
     private double x, y, z;
     private double vx, vy, vz;
     private double submergedFraction;
+
+    // ---- orientation
+    // Yaw is the whole reason local space and world space are different. Every consumer of
+    // geometry - rendering, raycasting, terrain collision, buoyancy, deck support - has to go
+    // through toWorld/toLocal, or the hull ends up somewhere other than its own hitbox.
+    private double yaw;
+    private double previousYaw;
+    private double yawVelocity;
+    private double pivotX;
+    private double pivotZ;
+    private double yawCos = 1.0;
+    private double yawSin = 0.0;
+
+    /** Vertical control input, -1 to 1, separate from forward throttle. */
+    private float helmLift;
 
     /** Set when the block set changes, so the manager knows to resend the full snapshot. */
     private boolean structureDirty;
@@ -152,6 +172,86 @@ public final class PhysicsConstruct {
     public double vy() { return vy; }
     public double vz() { return vz; }
     public double submergedFraction() { return submergedFraction; }
+    public double yaw() { return yaw; }
+    public double previousYaw() { return previousYaw; }
+    public double yawVelocity() { return yawVelocity; }
+    public double pivotX() { return pivotX; }
+    public double pivotZ() { return pivotZ; }
+
+    /** Shortest signed difference between this tick's yaw and last tick's, in degrees. */
+    public double deltaYaw() { return wrapDegrees(yaw - previousYaw); }
+
+    // ---- local space <-> world space
+
+    public double toWorldX(double localX, double localZ) {
+        double dx = localX - pivotX;
+        double dz = localZ - pivotZ;
+        return x + pivotX + dx * yawCos - dz * yawSin;
+    }
+
+    public double toWorldZ(double localX, double localZ) {
+        double dx = localX - pivotX;
+        double dz = localZ - pivotZ;
+        return z + pivotZ + dx * yawSin + dz * yawCos;
+    }
+
+    public double toLocalX(double worldX, double worldZ) {
+        double dx = worldX - x - pivotX;
+        double dz = worldZ - z - pivotZ;
+        return pivotX + dx * yawCos + dz * yawSin;
+    }
+
+    public double toLocalZ(double worldX, double worldZ) {
+        double dx = worldX - x - pivotX;
+        double dz = worldZ - z - pivotZ;
+        return pivotZ - dx * yawSin + dz * yawCos;
+    }
+
+    /**
+     * Same as {@link #toLocalX} but against last tick's transform.
+     *
+     * <p>Carrying a rider is "where was this point on the deck last tick, and where is that same
+     * deck point now" - which covers turning as well as translation, where a plain position
+     * delta only covers translation.
+     */
+    public double previousToLocalX(double worldX, double worldZ) {
+        double c = Math.cos(Math.toRadians(previousYaw));
+        double sn = Math.sin(Math.toRadians(previousYaw));
+        double dx = worldX - previousX - pivotX;
+        double dz = worldZ - previousZ - pivotZ;
+        return pivotX + dx * c + dz * sn;
+    }
+
+    public double previousToLocalZ(double worldX, double worldZ) {
+        double c = Math.cos(Math.toRadians(previousYaw));
+        double sn = Math.sin(Math.toRadians(previousYaw));
+        double dx = worldX - previousX - pivotX;
+        double dz = worldZ - previousZ - pivotZ;
+        return pivotZ - dx * sn + dz * c;
+    }
+
+    /** Rotates a local direction into world space. Heights are untouched by yaw. */
+    public double rotateDirectionX(double localX, double localZ) {
+        return localX * yawCos - localZ * yawSin;
+    }
+
+    public double rotateDirectionZ(double localX, double localZ) {
+        return localX * yawSin + localZ * yawCos;
+    }
+
+    private void setYaw(double degrees) {
+        yaw = wrapDegrees(degrees);
+        double radians = Math.toRadians(yaw);
+        yawCos = Math.cos(radians);
+        yawSin = Math.sin(radians);
+    }
+
+    private static double wrapDegrees(double degrees) {
+        double wrapped = degrees % 360.0;
+        if (wrapped >= 180.0) wrapped -= 360.0;
+        if (wrapped < -180.0) wrapped += 360.0;
+        return wrapped;
+    }
     public int helmCount() { return helmCount; }
     public int engineCount() { return engineCount; }
     public int propellerCount() { return propellerCount; }
@@ -198,12 +298,20 @@ public final class PhysicsConstruct {
     public boolean hasMoved() {
         return Math.abs(deltaX()) > REST_EPSILON
                 || Math.abs(deltaY()) > REST_EPSILON
-                || Math.abs(deltaZ()) > REST_EPSILON;
+                || Math.abs(deltaZ()) > REST_EPSILON
+                || Math.abs(deltaYaw()) > 1.0E-4;
     }
 
     /** Restores saved motion and control state during world load. */
     public void restoreRuntimeState(double vx, double vy, double vz,
                                     EngineMode mode, int powerStep) {
+        restoreRuntimeState(vx, vy, vz, mode, powerStep, 0.0);
+    }
+
+    public void restoreRuntimeState(double vx, double vy, double vz,
+                                    EngineMode mode, int powerStep, double savedYaw) {
+        setYaw(savedYaw);
+        this.previousYaw = this.yaw;
         this.vx = vx;
         this.vy = vy;
         this.vz = vz;
@@ -211,10 +319,26 @@ public final class PhysicsConstruct {
         this.enginePowerStep = Math.max(0, Math.min(4, powerStep));
     }
 
+    /**
+     * World bounding box of the hull at a given origin, widened to cover its current yaw.
+     *
+     * <p>A rotated rectangle needs a larger axis-aligned box than an unrotated one, and this is
+     * used for range checks and tracking, so it has to enclose the hull at every angle rather
+     * than only when the ship happens to be square to the world.
+     */
     public AABB aabbAt(double px, double py, double pz) {
+        double halfX = (maxLocalX - minLocalX + 1.0) * 0.5;
+        double halfZ = (maxLocalZ - minLocalZ + 1.0) * 0.5;
+        double absCos = Math.abs(yawCos);
+        double absSin = Math.abs(yawSin);
+        double rotatedHalfX = halfX * absCos + halfZ * absSin;
+        double rotatedHalfZ = halfX * absSin + halfZ * absCos;
+
+        double centreX = px + pivotX;
+        double centreZ = pz + pivotZ;
         return new AABB(
-                px + minLocalX, py + minLocalY, pz + minLocalZ,
-                px + maxLocalX + 1.0, py + maxLocalY + 1.0, pz + maxLocalZ + 1.0
+                centreX - rotatedHalfX, py + minLocalY, centreZ - rotatedHalfZ,
+                centreX + rotatedHalfX, py + maxLocalY + 1.0, centreZ + rotatedHalfZ
         );
     }
 
@@ -277,10 +401,17 @@ public final class PhysicsConstruct {
     }
 
     public void applyHelmInput(float throttle, float steer) {
+        applyHelmInput(throttle, steer, 0.0F);
+    }
+
+    public void applyHelmInput(float throttle, float steer, float lift) {
         helmThrottle = clampUnit(throttle);
         helmSteer = clampUnit(steer);
+        helmLift = clampUnit(lift);
         controlTicksRemaining = CONTROL_GRACE_TICKS;
     }
+
+    public float helmLift() { return helmLift; }
 
     private static float clampUnit(float value) {
         if (Float.isNaN(value)) return 0.0F;
@@ -298,11 +429,11 @@ public final class PhysicsConstruct {
      * highest block top that is not significantly above the player's current feet.
      */
     public double supportSurfaceY(double worldX, double worldZ, double feetY, boolean previousTransform) {
-        double baseX = previousTransform ? previousX : x;
         double baseY = previousTransform ? previousY : y;
-        double baseZ = previousTransform ? previousZ : z;
-        int localX = (int) Math.floor(worldX - baseX);
-        int localZ = (int) Math.floor(worldZ - baseZ);
+        int localX = (int) Math.floor(previousTransform
+                ? previousToLocalX(worldX, worldZ) : toLocalX(worldX, worldZ));
+        int localZ = (int) Math.floor(previousTransform
+                ? previousToLocalZ(worldX, worldZ) : toLocalZ(worldX, worldZ));
 
         List<StoredBlock> column = columnIndex.get(columnKey(localX, localZ));
         if (column == null) {
@@ -327,8 +458,8 @@ public final class PhysicsConstruct {
      * one column of the player can possibly intersect them, so this is what that pass reads.
      */
     public List<StoredBlock> blocksNear(double worldX, double worldZ) {
-        int centerX = (int) Math.floor(worldX - x);
-        int centerZ = (int) Math.floor(worldZ - z);
+        int centerX = (int) Math.floor(toLocalX(worldX, worldZ));
+        int centerZ = (int) Math.floor(toLocalZ(worldX, worldZ));
         List<StoredBlock> nearby = new ArrayList<>(8);
         for (int dx = -1; dx <= 1; dx++) {
             for (int dz = -1; dz <= 1; dz++) {
@@ -343,11 +474,12 @@ public final class PhysicsConstruct {
 
     /** The geometric highest column top, for ray and debug callers. */
     public double topSurfaceY(double worldX, double worldZ, boolean previousTransform) {
-        double baseX = previousTransform ? previousX : x;
         double baseY = previousTransform ? previousY : y;
-        double baseZ = previousTransform ? previousZ : z;
         List<StoredBlock> column = columnIndex.get(columnKey(
-                (int) Math.floor(worldX - baseX), (int) Math.floor(worldZ - baseZ)));
+                (int) Math.floor(previousTransform
+                        ? previousToLocalX(worldX, worldZ) : toLocalX(worldX, worldZ)),
+                (int) Math.floor(previousTransform
+                        ? previousToLocalZ(worldX, worldZ) : toLocalZ(worldX, worldZ))));
         if (column == null) {
             return Double.NaN;
         }
@@ -364,6 +496,7 @@ public final class PhysicsConstruct {
         previousX = x;
         previousY = y;
         previousZ = z;
+        previousYaw = yaw;
 
         if (blocks.isEmpty()) {
             return;
@@ -403,6 +536,8 @@ public final class PhysicsConstruct {
 
         clampVelocity(config, submergedFraction);
 
+        applyYaw(level);
+
         moveAxis(level, vx, 0.0, 0.0);
         moveAxis(level, 0.0, vy, 0.0);
         moveAxis(level, 0.0, 0.0, vz);
@@ -420,6 +555,7 @@ public final class PhysicsConstruct {
             // A helm-equipped construct coasts to a stop if the pilot stops sending input.
             helmThrottle = 0.0F;
             helmSteer = 0.0F;
+            helmLift = 0.0F;
         } else if (enginesEnabled()) {
             // Engine-only rigs with no helm cruise gently instead of running at full power.
             helmThrottle = 0.35F;
@@ -511,6 +647,11 @@ public final class PhysicsConstruct {
             recalculateWingBalance(helmFacing);
         }
 
+        // The hull turns about the centre of its own footprint. Rotating about the origin corner
+        // would swing the whole ship sideways instead of pivoting it.
+        pivotX = (minLocalX + maxLocalX + 1) * 0.5;
+        pivotZ = (minLocalZ + maxLocalZ + 1) * 0.5;
+
         rebuildCollisionShell();
         rebuildBuoyancySamples();
         mass = BlockMassProperties.totalMass(blocks);
@@ -533,6 +674,19 @@ public final class PhysicsConstruct {
             }
             collisionShell[direction.ordinal()] = List.copyOf(exposed);
         }
+
+        List<StoredBlock> outer = new ArrayList<>();
+        for (StoredBlock block : blocks) {
+            for (Direction direction : DIRECTIONS) {
+                if (!hasLocalBlock(block.localX() + direction.getStepX(),
+                        block.localY() + direction.getStepY(),
+                        block.localZ() + direction.getStepZ())) {
+                    outer.add(block);
+                    break;
+                }
+            }
+        }
+        outerShell = List.copyOf(outer);
     }
 
     /**
@@ -681,8 +835,8 @@ public final class PhysicsConstruct {
         int wetSamples = 0;
         int totalSamples = 0;
         for (StoredBlock block : buoyancySamples) {
-            double worldX = x + block.localX() + 0.5;
-            double worldZ = z + block.localZ() + 0.5;
+            double worldX = toWorldX(block.localX() + 0.5, block.localZ() + 0.5);
+            double worldZ = toWorldZ(block.localX() + 0.5, block.localZ() + 0.5);
             for (int s = 0; s < VERTICAL_SAMPLES_PER_BLOCK; s++) {
                 double worldY = y + block.localY() + SAMPLE_HEIGHTS[s];
                 // A mutable cursor keeps this off the allocation path; the old code created
@@ -745,6 +899,12 @@ public final class PhysicsConstruct {
             driveX /= driveLen;
             driveZ /= driveLen;
         }
+        // The drive direction is worked out in local space from the components' own facings,
+        // then rotated into the world, so a turning ship accelerates where its bow points.
+        double localDriveX = driveX;
+        double localDriveZ = driveZ;
+        driveX = rotateDirectionX(localDriveX, localDriveZ);
+        driveZ = rotateDirectionZ(localDriveX, localDriveZ);
 
         boolean poweredDrive = enginesEnabled() && engineCount > 0 && propellerCount > 0;
 
@@ -778,32 +938,49 @@ public final class PhysicsConstruct {
 
             // A very small passive drift keeps sails feeling alive without lateral jitter.
             double passive = Math.sin(time * 0.0035 + wavePhase) * 0.00020 * Math.min(3, sailCount) * airFactor;
-            vx += -helmForwardZ * passive;
-            vz += helmForwardX * passive;
+            vx += rotateDirectionX(-helmForwardZ, helmForwardX) * passive;
+            vz += rotateDirectionZ(-helmForwardZ, helmForwardX) * passive;
 
             if (pilotInputActive && Math.abs(throttle) > 0.001) {
                 // Sails stay below a 100% marine engine. Extra sails improve response more than
                 // top speed, so a wall of sails cannot become a rocket.
                 double sailResponse = Math.min(1.35, 0.75 + Math.sqrt(sailCount) * 0.20);
                 double targetSpeed = throttle * config.maxSailSpeed * airFactor;
-                accelerateTowardHorizontalSpeed(helmForwardX, helmForwardZ, targetSpeed,
-                        0.0060 * sailResponse * airFactor);
+                accelerateTowardHorizontalSpeed(
+                        rotateDirectionX(helmForwardX, helmForwardZ),
+                        rotateDirectionZ(helmForwardX, helmForwardZ),
+                        targetSpeed, 0.0060 * sailResponse * airFactor);
             }
         }
 
-        // Steering is rudder thrust, not a heading change. The construct has no yaw rotation, so
-        // turning the hull would move the visual model away from the collision volume every other
-        // system uses. It scales with actual speed so A/D cannot kick a stationary hull sideways.
+        // Steering turns the hull. A rudder only bites when water is flowing past it, so a boat
+        // has to be moving to turn; an aircraft's control surfaces work off thrust and keep some
+        // authority even when slow, which is what makes a plane flyable.
         if (pilotInputActive && Math.abs(steer) > 0.001) {
             double speed = Math.sqrt(vx * vx + vz * vz);
-            if (speed > 0.015) {
-                double sideX = -helmForwardZ;
-                double sideZ = helmForwardX;
-                double response = engineMode == EngineMode.AIRCRAFT ? 0.010 : 0.0065;
-                double correction = Math.min(response, speed * 0.035) * steer;
-                vx += sideX * correction;
-                vz += sideZ * correction;
+            double authority;
+            if (engineMode == EngineMode.AIRCRAFT) {
+                authority = 0.35 + Math.min(1.0, speed / 0.30) * 0.65;
+            } else {
+                // Below a slow walk a rudder does nothing at all, which is why a moored boat
+                // cannot spin on the spot.
+                authority = Math.min(1.0, speed / 0.10);
             }
+            double turnPower = engineMode == EngineMode.AIRCRAFT ? 0.32 : 0.24;
+            yawVelocity += steer * turnPower * authority * (0.35 + 0.65 * power);
+        }
+
+        // Vertical control. Thrusters point down, so they lift; with no thrusters an aircraft
+        // still trades a little speed for climb, and a boat simply cannot fly.
+        if (pilotInputActive && Math.abs(helmLift) > 0.001 && enginesEnabled()) {
+            double climb = 0.0;
+            if (thrusterCount > 0) {
+                double modeEfficiency = engineMode == EngineMode.AIRCRAFT ? 1.0 : 0.45;
+                climb = thrusterCount * (0.008 + 0.020 * power) * modeEfficiency;
+            } else if (engineMode == EngineMode.AIRCRAFT && wingCount > 0) {
+                climb = 0.010 * power * wingBalanceFactor;
+            }
+            vy += Math.min(0.11, climb) * helmLift;
         }
 
         if (wingCount > 0) {
@@ -866,9 +1043,9 @@ public final class PhysicsConstruct {
         int emitted = 0;
         for (StoredBlock block : componentBlocks) {
             if (emitted >= config.maxEffectEmitters) break;
-            double wx = x + block.localX() + 0.5;
+            double wx = toWorldX(block.localX() + 0.5, block.localZ() + 0.5);
             double wy = y + block.localY() + 0.5;
-            double wz = z + block.localZ() + 0.5;
+            double wz = toWorldZ(block.localX() + 0.5, block.localZ() + 0.5);
             BlockState state = block.state();
 
             if (state.is(AstraBlocks.ENGINE)) {
@@ -941,15 +1118,60 @@ public final class PhysicsConstruct {
      */
     private boolean canOccupy(ServerLevel level, double baseX, double baseY, double baseZ,
                               Direction movementDirection) {
-        for (StoredBlock block : collisionShell[movementDirection.ordinal()]) {
-            double bx0 = baseX + block.localX();
-            double by0 = baseY + block.localY();
-            double bz0 = baseZ + block.localZ();
-            if (!level.noBlockCollision(null, new AABB(bx0, by0, bz0, bx0 + 1.0, by0 + 1.0, bz0 + 1.0))) {
+        return shellClear(level, collisionShell[movementDirection.ordinal()], baseX, baseY, baseZ);
+    }
+
+    /**
+     * Tests a set of hull blocks against world terrain at a given origin.
+     *
+     * <p>A rotated block is no longer axis aligned, so it is tested as the axis-aligned box that
+     * encloses it. That box grows to about 1.41 blocks across at 45 degrees, which makes contact
+     * slightly early at intermediate angles - deliberately the safe direction, since the
+     * alternative is a hull visibly sinking into a cliff face.
+     */
+    private boolean shellClear(ServerLevel level, List<StoredBlock> shell,
+                               double baseX, double baseY, double baseZ) {
+        double halfExtent = 0.5 * (Math.abs(yawCos) + Math.abs(yawSin));
+        for (StoredBlock block : shell) {
+            double centreLocalX = block.localX() + 0.5;
+            double centreLocalZ = block.localZ() + 0.5;
+            double dx = centreLocalX - pivotX;
+            double dz = centreLocalZ - pivotZ;
+            double cx = baseX + pivotX + dx * yawCos - dz * yawSin;
+            double cz = baseZ + pivotZ + dx * yawSin + dz * yawCos;
+            double by = baseY + block.localY();
+
+            if (!level.noBlockCollision(null, new AABB(
+                    cx - halfExtent, by, cz - halfExtent,
+                    cx + halfExtent, by + 1.0, cz + halfExtent))) {
                 return false;
             }
         }
         return true;
+    }
+
+    /**
+     * Integrates yaw, refusing a turn that would sweep the hull through terrain.
+     *
+     * <p>Reverting the whole step rather than turning partway keeps orientation and collision in
+     * agreement: a hull that rotated into a wall and stopped there would have its blocks inside
+     * the wall until something moved it back out.
+     */
+    private void applyYaw(ServerLevel level) {
+        // A hull turns against water or air resistance, so an untouched wheel settles quickly.
+        yawVelocity *= 0.86;
+        if (Math.abs(yawVelocity) < 0.01) {
+            yawVelocity = 0.0;
+            return;
+        }
+        yawVelocity = Math.max(-MAX_YAW_SPEED, Math.min(MAX_YAW_SPEED, yawVelocity));
+
+        double before = yaw;
+        setYaw(yaw + yawVelocity);
+        if (!shellClear(level, outerShell, x, y, z)) {
+            setYaw(before);
+            yawVelocity = 0.0;
+        }
     }
 
     // --------------------------------------------------------------- indexing

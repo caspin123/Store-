@@ -22,6 +22,8 @@ public final class ClientPhysicsConstruct {
 
     private double previousX, previousY, previousZ;
     private double x, y, z;
+    private double previousYaw, yaw;
+    private double pivotX, pivotZ;
 
     // Drivetrain state mirrored from the server, used to drive component animation.
     private float enginePower;
@@ -34,10 +36,27 @@ public final class ClientPhysicsConstruct {
         this.previousX = this.x = payload.x();
         this.previousY = this.y = payload.y();
         this.previousZ = this.z = payload.z();
+        this.previousYaw = this.yaw = payload.yaw();
         this.blocks = payload.blocks().stream()
                 .map(b -> new ClientBlock(b.localX(), b.localY(), b.localZ(), Block.stateById(b.stateId())))
                 .toList();
         this.visibleBlocks = computeVisibleBlocks(this.blocks);
+
+        int minX = Integer.MAX_VALUE, maxX = Integer.MIN_VALUE;
+        int minZ = Integer.MAX_VALUE, maxZ = Integer.MIN_VALUE;
+        for (ClientBlock block : this.blocks) {
+            minX = Math.min(minX, block.localX());
+            maxX = Math.max(maxX, block.localX());
+            minZ = Math.min(minZ, block.localZ());
+            maxZ = Math.max(maxZ, block.localZ());
+        }
+        if (this.blocks.isEmpty()) {
+            minX = maxX = minZ = maxZ = 0;
+        }
+        // Must match the server's pivot exactly, or the hull is drawn turning about a different
+        // point than the one it actually collides about.
+        this.pivotX = (minX + maxX + 1) * 0.5;
+        this.pivotZ = (minZ + maxZ + 1) * 0.5;
     }
 
     /**
@@ -123,11 +142,14 @@ public final class ClientPhysicsConstruct {
      * component blocks whose top is above the player's current feet (helm/sail/etc.).
      */
     public double supportSurfaceY(double worldX, double worldZ, double feetY, boolean previousTransform) {
-        double baseX = previousTransform ? previousX : x;
         double baseY = previousTransform ? previousY : y;
+        double useYaw = previousTransform ? previousYaw : yaw;
+        double baseX = previousTransform ? previousX : x;
         double baseZ = previousTransform ? previousZ : z;
-        int localX = (int) Math.floor(worldX - baseX);
-        int localZ = (int) Math.floor(worldZ - baseZ);
+        double radians = Math.toRadians(useYaw);
+        double dx = worldX - baseX - pivotX, dz = worldZ - baseZ - pivotZ;
+        int localX = (int) Math.floor(pivotX + dx * Math.cos(radians) + dz * Math.sin(radians));
+        int localZ = (int) Math.floor(pivotZ - dx * Math.sin(radians) + dz * Math.cos(radians));
         double best = Double.NaN;
         double maxAllowedTop = feetY + 0.62;
         for (ClientBlock block : blocks) {
@@ -140,11 +162,9 @@ public final class ClientPhysicsConstruct {
 
     /** Highest translated ASTRA block top under a world X/Z point. */
     public double topSurfaceY(double worldX, double worldZ, boolean previousTransform) {
-        double baseX = previousTransform ? previousX : x;
         double baseY = previousTransform ? previousY : y;
-        double baseZ = previousTransform ? previousZ : z;
-        int localX = (int) Math.floor(worldX - baseX);
-        int localZ = (int) Math.floor(worldZ - baseZ);
+        int localX = (int) Math.floor(toLocalX(worldX, worldZ));
+        int localZ = (int) Math.floor(toLocalZ(worldX, worldZ));
         int highest = Integer.MIN_VALUE;
         for (ClientBlock block : blocks) {
             if (block.localX() == localX && block.localZ() == localZ) {
@@ -154,13 +174,71 @@ public final class ClientPhysicsConstruct {
         return highest == Integer.MIN_VALUE ? Double.NaN : baseY + highest + 1.0;
     }
 
-    public void updateTransform(double nx, double ny, double nz) {
+    public void updateTransform(double nx, double ny, double nz, double nyaw) {
         previousX = x;
         previousY = y;
         previousZ = z;
+        previousYaw = yaw;
         x = nx;
         y = ny;
         z = nz;
+        yaw = nyaw;
+    }
+
+    public double yaw() { return yaw; }
+    public double pivotX() { return pivotX; }
+    public double pivotZ() { return pivotZ; }
+
+    /** Yaw between the last two snapshots, taking the short way round the circle. */
+    public double renderYaw(float alpha) {
+        double delta = wrapDegrees(yaw - previousYaw);
+        return previousYaw + delta * alpha;
+    }
+
+    private static double wrapDegrees(double degrees) {
+        double wrapped = degrees % 360.0;
+        if (wrapped >= 180.0) wrapped -= 360.0;
+        if (wrapped < -180.0) wrapped += 360.0;
+        return wrapped;
+    }
+
+    // ---- local space <-> world space, mirroring PhysicsConstruct
+
+    public double toWorldX(double localX, double localZ) {
+        double radians = Math.toRadians(yaw);
+        double dx = localX - pivotX, dz = localZ - pivotZ;
+        return x + pivotX + dx * Math.cos(radians) - dz * Math.sin(radians);
+    }
+
+    public double toWorldZ(double localX, double localZ) {
+        double radians = Math.toRadians(yaw);
+        double dx = localX - pivotX, dz = localZ - pivotZ;
+        return z + pivotZ + dx * Math.sin(radians) + dz * Math.cos(radians);
+    }
+
+    public double toLocalX(double worldX, double worldZ) {
+        double radians = Math.toRadians(yaw);
+        double dx = worldX - x - pivotX, dz = worldZ - z - pivotZ;
+        return pivotX + dx * Math.cos(radians) + dz * Math.sin(radians);
+    }
+
+    public double toLocalZ(double worldX, double worldZ) {
+        double radians = Math.toRadians(yaw);
+        double dx = worldX - x - pivotX, dz = worldZ - z - pivotZ;
+        return pivotZ - dx * Math.sin(radians) + dz * Math.cos(radians);
+    }
+
+    /** Interpolated transform, so riders and the camera sit on the hull as it is drawn. */
+    public double renderToWorldX(double localX, double localZ, float alpha) {
+        double radians = Math.toRadians(renderYaw(alpha));
+        double dx = localX - pivotX, dz = localZ - pivotZ;
+        return renderX(alpha) + pivotX + dx * Math.cos(radians) - dz * Math.sin(radians);
+    }
+
+    public double renderToWorldZ(double localX, double localZ, float alpha) {
+        double radians = Math.toRadians(renderYaw(alpha));
+        double dx = localX - pivotX, dz = localZ - pivotZ;
+        return renderZ(alpha) + pivotZ + dx * Math.sin(radians) + dz * Math.cos(radians);
     }
 
     public double renderX(float alpha) { return previousX + (x - previousX) * alpha; }

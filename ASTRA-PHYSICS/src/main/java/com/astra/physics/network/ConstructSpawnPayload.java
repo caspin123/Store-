@@ -14,6 +14,7 @@ import com.astra.physics.AstraPhysics;
 public record ConstructSpawnPayload(
         UUID id,
         double x, double y, double z,
+        float yaw,
         int sizeX, int sizeY, int sizeZ,
         List<NetBlock> blocks
 ) implements CustomPacketPayload {
@@ -29,6 +30,7 @@ public record ConstructSpawnPayload(
         buf.writeDouble(x);
         buf.writeDouble(y);
         buf.writeDouble(z);
+        buf.writeFloat(yaw);
         buf.writeVarInt(sizeX);
         buf.writeVarInt(sizeY);
         buf.writeVarInt(sizeZ);
@@ -46,6 +48,7 @@ public record ConstructSpawnPayload(
         double x = buf.readDouble();
         double y = buf.readDouble();
         double z = buf.readDouble();
+        float yaw = buf.readFloat();
         int sizeX = buf.readVarInt();
         int sizeY = buf.readVarInt();
         int sizeZ = buf.readVarInt();
@@ -54,7 +57,7 @@ public record ConstructSpawnPayload(
         for (int i = 0; i < count; i++) {
             blocks.add(new NetBlock(buf.readVarInt(), buf.readVarInt(), buf.readVarInt(), buf.readVarInt()));
         }
-        return new ConstructSpawnPayload(id, x, y, z, sizeX, sizeY, sizeZ, List.copyOf(blocks));
+        return new ConstructSpawnPayload(id, x, y, z, yaw, sizeX, sizeY, sizeZ, List.copyOf(blocks));
     }
 
     @Override

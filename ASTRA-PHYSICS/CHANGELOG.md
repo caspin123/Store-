@@ -1,5 +1,70 @@
 # Changelog
 
+## 0.4.2-alpha
+
+The rest of what Clockwork's assembly and extension parts are for.
+
+### Physics Infuser — assembly with no selection
+
+The wand asks for two corners, which means a box, and a ship is not a box. Picking one always
+means either catching the scaffold the hull was resting on or missing a mast that stuck out past
+the corner.
+
+The infuser takes the shape the player actually built: right-click it in the world and it follows
+the blocks outward from itself until it runs out of them. It stays aboard afterwards as a normal
+component, and its core lifts and lights while the hull is live — the one glance that says this
+pile of blocks is a ship rather than scenery.
+
+It refuses rather than skips. An infuser on a build still touching bedrock, water or someone
+else's claim says which block stopped it instead of quietly swallowing the hillside, so a
+mis-click cannot eat terrain.
+
+It only answers an empty hand or the wand, because the interaction event runs before block
+placement and taking every click would mean never being able to place a block against the infuser
+you are still building around.
+
+### Assemble + grab
+
+A fourth wand mode. Assembling and then grabbing is two actions with a gap in between, and the gap
+is exactly when a freshly assembled hull rolls off its scaffold. This does both in one, so the new
+construct never touches anything.
+
+### Landing gear — Extendon, minus the shaft
+
+Clockwork's Extendon is a shaft that telescopes under power. There are no shafts here, but the
+thing that buys on a flying machine is landing gear, and the part worth keeping is that it moves
+on its own: a pilot on final approach has throttle, heading and altitude to think about, and the
+wheels are exactly what gets forgotten once.
+
+So it reads ground clearance rather than any control, and extends through four steps as the hull
+comes down — measured against real ground, so it deploys for a mountain ledge as readily as for
+sea level. It is checked on an interval and written back only when the step changes, because
+writing a block state resends the construct snapshot and doing that every tick would cost more
+than the whole rest of the solver.
+
+## 0.4.1-alpha
+
+Build fixes for 1.21.11, found by building on device.
+
+- **Key mapping categories became a type.** A binding's category is now a registered
+  `KeyMapping.Category` rather than a bare translation key, so the category is registered once
+  and handed to both bindings. The translation key moves to `key.category.astra_physics.controls`.
+- **`WingBlock` and `SailBlock` used `Direction` without importing it.** Both gained the type when
+  they learned to tile, and neither gained the import.
+
+### The validator now catches a missing import
+
+This is the second time a missing import reached a build, and the reason is structural: compiling
+without Minecraft on the classpath reports every unresolved name as `cannot find symbol`, so a
+genuine mistake is indistinguishable from the hundreds of expected errors and gets filtered out
+with them.
+
+The validator now finds them from the codebase's own habits instead. If the project imports
+`net.minecraft.core.Direction` in twenty files and one file uses `Direction` bare, that file is
+wrong. It needs no knowledge of Minecraft's API, and it says nothing about types the project never
+imports, so it stays quiet rather than guessing. Both of the imports fixed above were confirmed
+caught by deleting them again and watching the check fail.
+
 ## 0.4.0-alpha
 
 Five new components and a rebuilt wand, reimplemented from ideas in

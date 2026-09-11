@@ -17,9 +17,10 @@ MINECRAFT_TAGS = os.path.join(ROOT, "src", "main", "resources", "data", "minecra
 
 BLOCKS = ("helm", "engine", "propeller", "sail", "wing", "thruster",
           "reaction_wheel", "balloon", "cambered_wing", "stabilizer",
-          "altimeter", "governor", "gyro")
+          "altimeter", "governor", "gyro", "physics_infuser", "landing_gear")
 PICKAXE_BLOCKS = ("engine", "propeller", "wing", "thruster", "reaction_wheel",
-                  "cambered_wing", "stabilizer", "altimeter", "governor", "gyro")
+                  "cambered_wing", "stabilizer", "altimeter", "governor", "gyro",
+                  "physics_infuser", "landing_gear")
 AXE_BLOCKS = ("helm",)
 SHEAR_BLOCKS = ("sail", "balloon")
 
@@ -39,10 +40,12 @@ ENGLISH = {
     "block.astra_physics.altimeter": "ASTRA Altimeter",
     "block.astra_physics.governor": "ASTRA Governor",
     "block.astra_physics.gyro": "ASTRA Gyro",
+    "block.astra_physics.physics_infuser": "ASTRA Physics Infuser",
+    "block.astra_physics.landing_gear": "ASTRA Landing Gear",
 
     "message.astra_physics.prefix": "ASTRA ",
 
-    "key.categories.astra_physics": "ASTRA Physics",
+    "key.category.astra_physics.controls": "ASTRA Physics",
     "key.astra_physics.leave_helm": "Leave Helm",
     "key.astra_physics.wand_mode": "Cycle Wand Mode",
 
@@ -104,6 +107,10 @@ ENGLISH = {
     "message.astra_physics.wand.mode.assemble": "Assemble",
     "message.astra_physics.wand.mode.disassemble": "Disassemble",
     "message.astra_physics.wand.mode.grab": "Grab",
+    "message.astra_physics.wand.mode.assemble_and_grab": "Assemble and Grab",
+    "message.astra_physics.infuser.blocked": "Cannot absorb %s; move the build clear of it first.",
+    "message.astra_physics.infuser.too_large": "Attached build is larger than %s blocks.",
+    "message.astra_physics.infuser.nothing_attached": "Nothing is attached to this infuser.",
     "message.astra_physics.wand.grabbed": "Carrying a %s block construct. Click again to let go.",
     "message.astra_physics.wand.released": "Construct released.",
     "message.astra_physics.wand.too_heavy": "%s blocks is too heavy to carry; the limit is %s.",
@@ -156,10 +163,12 @@ ARABIC = {
     "block.astra_physics.altimeter": "مقياس ارتفاع ASTRA",
     "block.astra_physics.governor": "منظّم سرعة ASTRA",
     "block.astra_physics.gyro": "جيروسكوب ASTRA",
+    "block.astra_physics.physics_infuser": "مُحقن فيزياء ASTRA",
+    "block.astra_physics.landing_gear": "عجل هبوط ASTRA",
 
     "message.astra_physics.prefix": "ASTRA ",
 
-    "key.categories.astra_physics": "ASTRA Physics",
+    "key.category.astra_physics.controls": "ASTRA Physics",
     "key.astra_physics.leave_helm": "ترك الدفة",
     "key.astra_physics.wand_mode": "تبديل وضع العصا",
 
@@ -220,6 +229,10 @@ ARABIC = {
     "message.astra_physics.wand.mode.assemble": "تجميع",
     "message.astra_physics.wand.mode.disassemble": "تفكيك",
     "message.astra_physics.wand.mode.grab": "مسك",
+    "message.astra_physics.wand.mode.assemble_and_grab": "تجميع ومسك",
+    "message.astra_physics.infuser.blocked": "ما يقدر يمتص %s؛ افصل البناء عنه أول.",
+    "message.astra_physics.infuser.too_large": "البناء الموصول أكبر من %s بلوك.",
+    "message.astra_physics.infuser.nothing_attached": "ما في شي موصول بهذا المُحقن.",
     "message.astra_physics.wand.grabbed": "تحمل مركبة من %s بلوك. اضغط مرة أخرى للترك.",
     "message.astra_physics.wand.released": "تم ترك المركبة.",
     "message.astra_physics.wand.too_heavy": "%s بلوك ثقيلة جداً للحمل؛ الحد %s.",
@@ -305,6 +318,11 @@ RECIPES = {
                   "B": "minecraft:copper_ingot"}),
     "gyro": (["/I/", "IEI", "/I/"],
              {"I": "minecraft:iron_ingot", "E": "minecraft:ender_eye"}),
+    "physics_infuser": (["IDI", "DND", "IDI"],
+                        {"I": "minecraft:iron_block", "D": "minecraft:diamond",
+                         "N": "minecraft:nether_star"}),
+    "landing_gear": (["/I/", "/I/", "SIS"],
+                     {"I": "minecraft:iron_ingot", "S": "minecraft:smooth_stone_slab"}),
     "balloon": (["WWW", "WGW", "WSW"],
                 {"W": "minecraft:white_wool", "G": "minecraft:glowstone_dust",
                  "S": "minecraft:string"}),
@@ -328,13 +346,25 @@ def shaped_recipe(result, pattern, keys, count=1):
 # Blocks whose inventory icon is their own 3D model rather than a hand-drawn sprite. The
 # original components each have a painted item texture; these newer ones do not need one.
 MODEL_ITEM_BLOCKS = ("reaction_wheel", "balloon", "cambered_wing", "stabilizer",
-                     "altimeter", "governor", "gyro")
+                     "altimeter", "governor", "gyro", "physics_infuser", "landing_gear")
 
 
 def write_model_items():
     for block in MODEL_ITEM_BLOCKS:
+        # A tiling component's models are named frame_piece, not frame, so its first model is
+        # <block>_0_0. Picking whichever actually exists means this cannot break again when a
+        # block gains or loses tiling - which is exactly how the cambered wing ended up with an
+        # item model pointing at a file that was never generated.
+        candidates = (f"{block}_0_0", f"{block}_0")
+        parent = next(
+            (name for name in candidates
+             if os.path.exists(os.path.join(ASSETS, "models", "block", f"{name}.json"))),
+            None)
+        if parent is None:
+            raise SystemExit(f"{block}: no block model to use as an item model; "
+                             f"tried {', '.join(candidates)}")
         write_json(os.path.join(ASSETS, "models", "item", f"{block}.json"),
-                   {"parent": f"astra_physics:block/{block}_0"})
+                   {"parent": f"astra_physics:block/{parent}"})
         write_json(os.path.join(ASSETS, "items", f"{block}.json"),
                    {"model": {"type": "minecraft:model",
                               "model": f"astra_physics:item/{block}"}})

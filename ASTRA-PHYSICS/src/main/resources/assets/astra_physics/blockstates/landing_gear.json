@@ -1,0 +1,64 @@
+{
+  "variants": {
+    "facing=north,extension=0": {
+      "model": "astra_physics:block/landing_gear_0"
+    },
+    "facing=north,extension=1": {
+      "model": "astra_physics:block/landing_gear_1"
+    },
+    "facing=north,extension=2": {
+      "model": "astra_physics:block/landing_gear_2"
+    },
+    "facing=north,extension=3": {
+      "model": "astra_physics:block/landing_gear_3"
+    },
+    "facing=east,extension=0": {
+      "model": "astra_physics:block/landing_gear_0",
+      "y": 90
+    },
+    "facing=east,extension=1": {
+      "model": "astra_physics:block/landing_gear_1",
+      "y": 90
+    },
+    "facing=east,extension=2": {
+      "model": "astra_physics:block/landing_gear_2",
+      "y": 90
+    },
+    "facing=east,extension=3": {
+      "model": "astra_physics:block/landing_gear_3",
+      "y": 90
+    },
+    "facing=south,extension=0": {
+      "model": "astra_physics:block/landing_gear_0",
+      "y": 180
+    },
+    "facing=south,extension=1": {
+      "model": "astra_physics:block/landing_gear_1",
+      "y": 180
+    },
+    "facing=south,extension=2": {
+      "model": "astra_physics:block/landing_gear_2",
+      "y": 180
+    },
+    "facing=south,extension=3": {
+      "model": "astra_physics:block/landing_gear_3",
+      "y": 180
+    },
+    "facing=west,extension=0": {
+      "model": "astra_physics:block/landing_gear_0",
+      "y": 270
+    },
+    "facing=west,extension=1": {
+      "model": "astra_physics:block/landing_gear_1",
+      "y": 270
+    },
+    "facing=west,extension=2": {
+      "model": "astra_physics:block/landing_gear_2",
+      "y": 270
+    },
+    "facing=west,extension=3": {
+      "model": "astra_physics:block/landing_gear_3",
+      "y": 270
+    }
+  }
+}

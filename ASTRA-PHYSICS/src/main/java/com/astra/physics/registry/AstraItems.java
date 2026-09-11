@@ -48,6 +48,8 @@ public final class AstraItems {
                 output.accept(AstraBlocks.ALTIMETER);
                 output.accept(AstraBlocks.GOVERNOR);
                 output.accept(AstraBlocks.GYRO);
+                output.accept(AstraBlocks.PHYSICS_INFUSER);
+                output.accept(AstraBlocks.LANDING_GEAR);
             })
             .build();
 

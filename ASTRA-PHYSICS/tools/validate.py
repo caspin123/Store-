@@ -39,6 +39,53 @@ def walk(root, suffix=".json"):
                 yield os.path.join(base, name)
 
 
+def check_missing_imports():
+    """Flags a type used bare in one file that every other file imports.
+
+    A missing import is indistinguishable from every other unresolved symbol when compiling
+    without Minecraft on the classpath, so it slips through every offline check — twice now.
+    This catches it from the codebase's own habits instead: if the project imports
+    net.minecraft.core.Direction in twenty files and one file uses Direction without importing
+    it, that file is wrong. It needs no knowledge of Minecraft's API at all, and it says nothing
+    about types the project never imports, so it stays quiet rather than guessing.
+    """
+    sources = {}
+    for source_set in ("main/java", "client/java"):
+        for path in walk(os.path.join(SRC, source_set), ".java"):
+            with open(path, encoding="utf-8") as handle:
+                sources[path] = handle.read()
+
+    def strip_noise(text):
+        text = re.sub(r"/\*.*?\*/", " ", text, flags=re.S)
+        text = re.sub(r"//[^\n]*", " ", text)
+        return re.sub(r'"(\\.|[^"\\])*"', '""', text)
+
+    imports_of = {}
+    for raw in sources.values():
+        for fq in re.findall(r"^import\s+(?:static\s+)?([\w.]+)\s*;", raw, flags=re.M):
+            imports_of.setdefault(fq.rsplit(".", 1)[-1], set()).add(fq)
+
+    failures = []
+    for path, raw in sorted(sources.items()):
+        body = strip_noise(raw)
+        imported = {fq.rsplit(".", 1)[-1] for fq
+                    in re.findall(r"^import\s+(?:static\s+)?([\w.]+)\s*;", raw, flags=re.M)}
+        package = re.search(r"^package\s+([\w.]+)\s*;", raw, flags=re.M)
+        package = package.group(1) if package else ""
+        # A type declared in this very file, nested types included, needs no import.
+        declared = set(re.findall(r"\b(?:class|interface|enum|record)\s+([A-Z][A-Za-z0-9_]*)", body))
+
+        for name, fqs in imports_of.items():
+            if name in imported or name in declared:
+                continue
+            if any(fq.rsplit(".", 1)[0] == package for fq in fqs):
+                continue
+            if re.search(r"(?<![\w.])" + re.escape(name) + r"(?![\w])", body):
+                failures.append(f"{os.path.relpath(path, ROOT)} uses '{name}' without importing "
+                                f"it; the rest of the project imports {sorted(fqs)[0]}")
+    report(f"Java imports ({len(sources)} files)", failures)
+
+
 def check_json_parses():
     failures = []
     count = 0
@@ -103,6 +150,33 @@ def check_blockstate_models():
                     failures.append(
                         f"{os.path.basename(path)} [{key}] -> missing model {entry['model']}")
     report(f"Blockstate models ({variants} variants)", failures)
+
+
+def check_model_parents():
+    """Every model's parent must resolve.
+
+    A model whose parent does not exist renders as the black and magenta placeholder, and nothing
+    else notices: the file itself is present and parses, so a check that only asks whether the
+    file exists passes happily. That is how a wing shipped with an item model pointing at a block
+    model that was never generated.
+    """
+    failures = []
+    checked = 0
+    for path in walk(os.path.join(ASSETS, "models")):
+        parent = read_json(path).get("parent")
+        if not parent:
+            continue
+        checked += 1
+        namespace, _, model = parent.rpartition(":")
+        if namespace in ("minecraft", ""):
+            continue
+        if namespace != "astra_physics":
+            failures.append(f"{os.path.basename(path)}: parent {parent} belongs to "
+                            f"'{namespace}', which this mod does not depend on")
+            continue
+        if not os.path.exists(os.path.join(ASSETS, "models", model + ".json")):
+            failures.append(f"{os.path.relpath(path, ASSETS)}: parent {parent} does not exist")
+    report(f"Model parents ({checked} models)", failures)
 
 
 def check_model_textures():
@@ -245,10 +319,12 @@ def check_animation_frames():
 
 
 def main():
+    check_missing_imports()
     check_json_parses()
     check_translations()
     check_format_arguments()
     check_blockstate_models()
+    check_model_parents()
     check_model_textures()
     check_model_geometry()
     check_block_coverage()

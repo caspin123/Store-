@@ -5,6 +5,9 @@ import org.lwjgl.glfw.GLFW;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 
 import net.minecraft.client.KeyMapping;
+import net.minecraft.resources.Identifier;
+
+import com.astra.physics.AstraPhysics;
 
 /**
  * Client key bindings.
@@ -14,6 +17,14 @@ import net.minecraft.client.KeyMapping;
  * aircraft — you cannot ask someone to climb without also throwing them off the helm.
  */
 public final class AstraKeys {
+    /**
+     * Key categories became a registered type in 1.21.11 rather than a bare translation key, so
+     * the category is registered once here and handed to every binding that belongs to it.
+     */
+    private static final KeyMapping.Category CATEGORY = KeyMapping.Category.register(
+            Identifier.fromNamespaceAndPath(AstraPhysics.MOD_ID, "controls")
+    );
+
     private static KeyMapping leaveHelm;
     private static KeyMapping cycleWandMode;
 
@@ -23,12 +34,12 @@ public final class AstraKeys {
         leaveHelm = KeyBindingHelper.registerKeyBinding(new KeyMapping(
                 "key.astra_physics.leave_helm",
                 GLFW.GLFW_KEY_G,
-                "key.categories.astra_physics"
+                CATEGORY
         ));
         cycleWandMode = KeyBindingHelper.registerKeyBinding(new KeyMapping(
                 "key.astra_physics.wand_mode",
                 GLFW.GLFW_KEY_V,
-                "key.categories.astra_physics"
+                CATEGORY
         ));
     }
 

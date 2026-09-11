@@ -1,5 +1,47 @@
 # Changelog
 
+## 0.4.2-alpha
+
+The rest of what Clockwork's assembly and extension parts are for.
+
+### Physics Infuser — assembly with no selection
+
+The wand asks for two corners, which means a box, and a ship is not a box. Picking one always
+means either catching the scaffold the hull was resting on or missing a mast that stuck out past
+the corner.
+
+The infuser takes the shape the player actually built: right-click it in the world and it follows
+the blocks outward from itself until it runs out of them. It stays aboard afterwards as a normal
+component, and its core lifts and lights while the hull is live — the one glance that says this
+pile of blocks is a ship rather than scenery.
+
+It refuses rather than skips. An infuser on a build still touching bedrock, water or someone
+else's claim says which block stopped it instead of quietly swallowing the hillside, so a
+mis-click cannot eat terrain.
+
+It only answers an empty hand or the wand, because the interaction event runs before block
+placement and taking every click would mean never being able to place a block against the infuser
+you are still building around.
+
+### Assemble + grab
+
+A fourth wand mode. Assembling and then grabbing is two actions with a gap in between, and the gap
+is exactly when a freshly assembled hull rolls off its scaffold. This does both in one, so the new
+construct never touches anything.
+
+### Landing gear — Extendon, minus the shaft
+
+Clockwork's Extendon is a shaft that telescopes under power. There are no shafts here, but the
+thing that buys on a flying machine is landing gear, and the part worth keeping is that it moves
+on its own: a pilot on final approach has throttle, heading and altitude to think about, and the
+wheels are exactly what gets forgotten once.
+
+So it reads ground clearance rather than any control, and extends through four steps as the hull
+comes down — measured against real ground, so it deploys for a mountain ledge as readily as for
+sea level. It is checked on an interval and written back only when the step changes, because
+writing a block state resends the construct snapshot and doing that every tick would cost more
+than the whole rest of the solver.
+
 ## 0.4.1-alpha
 
 Build fixes for 1.21.11, found by building on device.

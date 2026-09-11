@@ -152,6 +152,33 @@ def check_blockstate_models():
     report(f"Blockstate models ({variants} variants)", failures)
 
 
+def check_model_parents():
+    """Every model's parent must resolve.
+
+    A model whose parent does not exist renders as the black and magenta placeholder, and nothing
+    else notices: the file itself is present and parses, so a check that only asks whether the
+    file exists passes happily. That is how a wing shipped with an item model pointing at a block
+    model that was never generated.
+    """
+    failures = []
+    checked = 0
+    for path in walk(os.path.join(ASSETS, "models")):
+        parent = read_json(path).get("parent")
+        if not parent:
+            continue
+        checked += 1
+        namespace, _, model = parent.rpartition(":")
+        if namespace in ("minecraft", ""):
+            continue
+        if namespace != "astra_physics":
+            failures.append(f"{os.path.basename(path)}: parent {parent} belongs to "
+                            f"'{namespace}', which this mod does not depend on")
+            continue
+        if not os.path.exists(os.path.join(ASSETS, "models", model + ".json")):
+            failures.append(f"{os.path.relpath(path, ASSETS)}: parent {parent} does not exist")
+    report(f"Model parents ({checked} models)", failures)
+
+
 def check_model_textures():
     failures = []
     models = 0
@@ -297,6 +324,7 @@ def main():
     check_translations()
     check_format_arguments()
     check_blockstate_models()
+    check_model_parents()
     check_model_textures()
     check_model_geometry()
     check_block_coverage()

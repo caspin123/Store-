@@ -75,6 +75,8 @@ public final class PhysicsConstructManager {
     private static final Map<UUID, Set<UUID>> TRACKED_BY_PLAYER = new HashMap<>();
     private static final Map<UUID, WandMode> WAND_MODES = new HashMap<>();
     private static final Map<UUID, GrabSession> GRABS = new HashMap<>();
+    /** Most recent assembly per dimension, so assemble-and-grab can pick it straight up. */
+    private static final Map<ResourceKey<Level>, PhysicsConstruct> LAST_ASSEMBLED = new HashMap<>();
 
     private static final double STAND_BELOW_TOLERANCE = 0.60;
     private static final double STAND_ABOVE_TOLERANCE = 0.75;
@@ -136,6 +138,7 @@ public final class PhysicsConstructManager {
      */
     public static void onServerStopped() {
         BY_LEVEL.clear();
+        LAST_ASSEMBLED.clear();
         PILOTS.clear();
         TRACKED_BY_PLAYER.clear();
     }
@@ -239,6 +242,91 @@ public final class PhysicsConstructManager {
 
     // -------------------------------------------------------------- assembly
 
+    /**
+     * Assembles a selection and hands the new construct straight to the player's grab.
+     *
+     * <p>Assembling and then grabbing as two actions leaves a moment where the new construct is
+     * loose, which is exactly when a freshly built hull rolls off its scaffold. Doing both at once
+     * means it never touches anything.
+     */
+    public static boolean assembleAndGrab(ServerPlayer player, Level level, List<BlockPos> selected) {
+        if (!assemble(player, level, selected)) {
+            return false;
+        }
+        if (!(level instanceof ServerLevel serverLevel)) {
+            return true;
+        }
+
+        PhysicsConstruct assembled = LAST_ASSEMBLED.get(serverLevel.dimension());
+        if (assembled == null || assembled.blockCount() > AstraConfig.get().maxGrabBlocks) {
+            return true;
+        }
+        double distance = Math.max(4.0, Math.min(AstraConfig.get().maxGrabDistance,
+                player.getEyePosition().distanceTo(assembled.boundingBox().getCenter())));
+        GRABS.put(player.getUUID(), new GrabSession(assembled.id(), distance));
+        AstraText.sendActionBar(player, AstraText.success("wand.grabbed", assembled.blockCount()));
+        return true;
+    }
+
+    /**
+     * Assembles whatever is attached to an infuser, with no selection at all.
+     *
+     * <p>A corner selection is a box, and a ship is not a box: picking one always means catching
+     * scenery the hull was resting on, or missing a mast that stuck out past the corner. Following
+     * the blocks outward from the infuser takes the shape the player actually built.
+     *
+     * <p>The fill refuses on anything it must not absorb rather than skipping past it, so an
+     * infuser on a build still touching the ground says why instead of quietly swallowing the
+     * hillside.
+     */
+    public static boolean assembleFromInfuser(ServerPlayer player, ServerLevel level, BlockPos origin) {
+        AstraConfig config = AstraConfig.get();
+
+        List<BlockPos> found = new ArrayList<>();
+        Set<Long> seen = new HashSet<>();
+        Deque<BlockPos> queue = new ArrayDeque<>();
+        queue.add(origin);
+        seen.add(origin.asLong());
+
+        while (!queue.isEmpty()) {
+            BlockPos current = queue.removeFirst();
+            BlockState state = level.getBlockState(current);
+            if (state.isAir()) {
+                continue;
+            }
+            if (state.is(Blocks.BEDROCK) || !state.getFluidState().isEmpty()) {
+                AstraText.sendActionBar(player,
+                        AstraText.warning("infuser.blocked", current.toShortString()));
+                return false;
+            }
+            if (!mayModify(level, player, current, state)) {
+                AstraText.sendActionBar(player,
+                        AstraText.warning("assemble.protected", current.toShortString()));
+                return false;
+            }
+
+            found.add(current.immutable());
+            if (found.size() > config.maxConstructBlocks) {
+                AstraText.sendActionBar(player,
+                        AstraText.warning("infuser.too_large", config.maxConstructBlocks));
+                return false;
+            }
+
+            for (Direction direction : Direction.values()) {
+                BlockPos neighbour = current.relative(direction);
+                if (!level.getBlockState(neighbour).isAir() && seen.add(neighbour.asLong())) {
+                    queue.addLast(neighbour);
+                }
+            }
+        }
+
+        if (found.size() <= 1) {
+            AstraText.sendActionBar(player, AstraText.warning("infuser.nothing_attached"));
+            return false;
+        }
+        return assemble(player, level, found);
+    }
+
     public static boolean assemble(ServerPlayer player, Level level, List<BlockPos> selected) {
         if (!(level instanceof ServerLevel serverLevel)) {
             return false;
@@ -332,6 +420,7 @@ public final class PhysicsConstructManager {
         UUID id = UUID.randomUUID();
         PhysicsConstruct construct = new PhysicsConstruct(id, stored, minX, minY + 0.20, minZ);
         constructs.put(id, construct);
+        LAST_ASSEMBLED.put(serverLevel.dimension(), construct);
 
         AstraText.sendActionBar(player, AstraText.success("assemble.done",
                 stored.size(), blockEntityCount, construct.engineCount(), construct.propellerCount(),

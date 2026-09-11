@@ -14,7 +14,15 @@ public enum WandMode {
     /** Click a construct to return every block of it to the world. */
     DISASSEMBLE("disassemble"),
     /** Click a construct to carry it on the end of your gaze; click again to let go. */
-    GRAB("grab");
+    GRAB("grab"),
+    /**
+     * Assemble a selection and pick it straight up.
+     *
+     * <p>Assembling on the ground and then grabbing is two operations with a moment in between
+     * where the new construct drops, which is exactly when a freshly built hull rolls off its
+     * scaffold. Doing both at once means it never touches anything.
+     */
+    ASSEMBLE_AND_GRAB("assemble_and_grab");
 
     private final String key;
 

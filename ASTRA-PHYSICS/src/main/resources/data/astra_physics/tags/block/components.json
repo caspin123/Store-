@@ -13,6 +13,8 @@
     "astra_physics:stabilizer",
     "astra_physics:altimeter",
     "astra_physics:governor",
-    "astra_physics:gyro"
+    "astra_physics:gyro",
+    "astra_physics:physics_infuser",
+    "astra_physics:landing_gear"
   ]
 }

@@ -11,7 +11,9 @@ import net.fabricmc.fabric.api.event.player.UseBlockCallback;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.fabricmc.loader.api.FabricLoader;
 
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.InteractionResult;
 
 import com.astra.physics.command.AstraCommands;
@@ -59,14 +61,31 @@ public final class AstraPhysics implements ModInitializer {
             if (level.isClientSide() || !(player instanceof ServerPlayer serverPlayer)) {
                 return InteractionResult.PASS;
             }
-            if (player.getItemInHand(hand).getItem() != AstraItems.PHYSICS_WAND) {
+
+            // An infuser assembles what it is attached to, with no wand and no selection.
+            //
+            // Only on an empty hand or the wand: this callback runs before block placement, so
+            // taking every click would mean a player could never place a block against the
+            // infuser they are still building around.
+            ItemStack held = player.getItemInHand(hand);
+            if (level instanceof ServerLevel serverLevel
+                    && (held.isEmpty() || held.getItem() == AstraItems.PHYSICS_WAND)
+                    && !player.isSecondaryUseActive()
+                    && level.getBlockState(hitResult.getBlockPos()).is(AstraBlocks.PHYSICS_INFUSER)) {
+                PhysicsConstructManager.assembleFromInfuser(
+                        serverPlayer, serverLevel, hitResult.getBlockPos());
+                return InteractionResult.SUCCESS;
+            }
+
+            if (held.getItem() != AstraItems.PHYSICS_WAND) {
                 return InteractionResult.PASS;
             }
 
             // Corner picking belongs to assemble mode. In the other modes the wand acts on a
             // construct, and a stray click on terrain should do nothing rather than quietly
             // start a selection the player did not ask for.
-            if (PhysicsConstructManager.wandMode(serverPlayer) != WandMode.ASSEMBLE) {
+            WandMode mode = PhysicsConstructManager.wandMode(serverPlayer);
+            if (mode != WandMode.ASSEMBLE && mode != WandMode.ASSEMBLE_AND_GRAB) {
                 return InteractionResult.SUCCESS;
             }
 

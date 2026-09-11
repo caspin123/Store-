@@ -22,6 +22,8 @@ import com.astra.physics.block.EngineBlock;
 import com.astra.physics.block.HelmBlock;
 import com.astra.physics.block.GovernorBlock;
 import com.astra.physics.block.GyroBlock;
+import com.astra.physics.block.LandingGearBlock;
+import com.astra.physics.block.PhysicsInfuserBlock;
 import com.astra.physics.block.PropellerBlock;
 import com.astra.physics.block.ReactionWheelBlock;
 import com.astra.physics.block.SailBlock;
@@ -65,6 +67,10 @@ public final class AstraBlocks {
             metallic(MapColor.COLOR_BROWN, 2.0F));
     public static final Block GYRO = register("gyro", GyroBlock::new,
             metallic(MapColor.COLOR_CYAN, 3.0F));
+    public static final Block PHYSICS_INFUSER = register("physics_infuser", PhysicsInfuserBlock::new,
+            metallic(MapColor.COLOR_CYAN, 4.5F));
+    public static final Block LANDING_GEAR = register("landing_gear", LandingGearBlock::new,
+            metallic(MapColor.COLOR_GRAY, 2.5F));
 
     /**
      * Earlier builds registered every component with a bare {@code Properties.of()}, which meant

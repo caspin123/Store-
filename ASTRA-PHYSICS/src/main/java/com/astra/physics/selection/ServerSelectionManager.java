@@ -15,6 +15,7 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 
 import com.astra.physics.config.AstraConfig;
+import com.astra.physics.item.WandMode;
 import com.astra.physics.network.SelectionSyncPayload;
 import com.astra.physics.ship.PhysicsConstructManager;
 import com.astra.physics.util.AstraText;
@@ -90,8 +91,12 @@ public final class ServerSelectionManager {
             return;
         }
 
-        // Third click assembles the selection the server already validated.
-        if (PhysicsConstructManager.assemble(player, level, state.blocks)) {
+        // Third click assembles the selection the server already validated. The combined mode
+        // picks the result up in the same action, so it never gets a chance to drop.
+        boolean assembled = PhysicsConstructManager.wandMode(player) == WandMode.ASSEMBLE_AND_GRAB
+                ? PhysicsConstructManager.assembleAndGrab(player, level, state.blocks)
+                : PhysicsConstructManager.assemble(player, level, state.blocks);
+        if (assembled) {
             STATES.remove(player.getUUID());
             sync(player, SelectionSyncPayload.clear());
         }

@@ -23,6 +23,8 @@ fly and walk around on.
 | **Altimeter** | Right-click to hold the current height. Needs thrusters or balloons. | Armed light |
 | **Gyro** | Right-click to hold the current heading. | Rotor spins |
 | **Governor** | Caps top speed without cutting engine power. | Lever shows the setting |
+| **Physics Infuser** | Right-click it in the world and everything attached to it assembles — no wand, no corners. Stays aboard as part of the ship. | Core lifts and lights while the hull is live |
+| **Landing Gear** | Extends as the craft comes down and folds away once it is clear. Deploys on its own; nothing to remember on final approach. | Leg telescopes in four steps |
 
 Components animate from the ship's real state, not a fixed loop: a parked ship's propellers are
 still, and a thruster only burns on forward throttle.
@@ -36,8 +38,14 @@ still, and a thruster only burns on forward throttle.
    climb and dive, `G` lets go (right-clicking the wheel again also works). You keep full control
    of the camera while piloting.
 5. Press `V` to change what the wand does: **assemble**, **disassemble** (click a construct to
-   return every block to the world) or **grab** (carry a construct on the end of your gaze).
+   return every block to the world), **grab** (carry a construct on the end of your gaze) or
+   **assemble + grab** (both at once, so a new hull never drops off its scaffold).
    `/astra disassemble` still works for operators.
+
+Or skip the corners entirely: put a **Physics Infuser** on the build and right-click it. It follows
+the blocks outward from itself, so it takes the shape you actually built rather than a box — masts
+included, the hillside underneath not. It refuses rather than guesses if the build is still touching
+ground it must not absorb.
 
 The selection must be one connected group of blocks, and you must be allowed to build there —
 assembly deletes world blocks, so it respects spawn protection and land-claim mods.

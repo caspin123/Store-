@@ -20,6 +20,7 @@ import net.minecraft.world.phys.AABB;
 
 import com.astra.physics.block.AstraFacingBlock;
 import com.astra.physics.block.GovernorBlock;
+import com.astra.physics.block.LandingGearBlock;
 import com.astra.physics.config.AstraConfig;
 import com.astra.physics.network.ConstructStatePayload;
 import com.astra.physics.registry.AstraBlocks;
@@ -88,6 +89,9 @@ public final class PhysicsConstruct {
     private int helmCount, engineCount, propellerCount, sailCount, wingCount, thrusterCount;
     private int reactionWheelCount, balloonCount;
     private int camberedWingCount, stabilizerCount, altimeterCount, gyroCount;
+    private final List<StoredBlock> landingGearBlocks = new ArrayList<>();
+    /** Last gear extension written to the blocks, so a resync only happens when it changes. */
+    private int gearExtension = LandingGearBlock.DEPLOYED;
     /** Lowest governor setting aboard, 3 meaning unrestricted. The strictest one wins. */
     private int speedLimitStep = GovernorBlock.UNRESTRICTED;
 
@@ -685,6 +689,7 @@ public final class PhysicsConstruct {
         moveAxis(level, 0.0, 0.0, vz);
 
         emitComponentEffects(level, config, submergedFraction);
+        updateLandingGear(level);
         refreshNetworkState();
 
         // The carrier re-asserts this every tick it holds on, so clearing it here is what makes
@@ -723,6 +728,7 @@ public final class PhysicsConstruct {
         helmCount = engineCount = propellerCount = sailCount = wingCount = thrusterCount = 0;
         reactionWheelCount = balloonCount = 0;
         camberedWingCount = stabilizerCount = altimeterCount = gyroCount = 0;
+        landingGearBlocks.clear();
         propellerThrustX = propellerThrustZ = 0.0;
         helmForwardX = 0.0;
         helmForwardZ = 1.0;
@@ -789,6 +795,11 @@ public final class PhysicsConstruct {
                 isComponent = true;
             } else if (state.is(AstraBlocks.GYRO)) {
                 gyroCount++;
+                isComponent = true;
+            } else if (state.is(AstraBlocks.PHYSICS_INFUSER)) {
+                isComponent = true;
+            } else if (state.is(AstraBlocks.LANDING_GEAR)) {
+                landingGearBlocks.add(block);
                 isComponent = true;
             }
 
@@ -1203,6 +1214,69 @@ public final class PhysicsConstruct {
         double airFactor = Math.max(0.0, 1.0 - submerged);
         double lift = balloonCount * config.balloonLiftPerBlock * density * airFactor;
         vy += lift / Math.max(1.0, mass);
+    }
+
+    /**
+     * Extends the landing gear as the hull comes down and folds it once it is clear.
+     *
+     * <p>Measured against real ground rather than altitude, so gear comes down for a mountain
+     * ledge as readily as for sea level. It is checked on an interval and only written back when
+     * the step actually changes, because writing a block state resends the construct's snapshot
+     * and doing that every tick would cost more than the whole rest of the solver.
+     */
+    private void updateLandingGear(ServerLevel level) {
+        if (landingGearBlocks.isEmpty() || (level.getGameTime() & 7L) != 0L) {
+            return;
+        }
+
+        double clearance = groundClearance(level);
+        int wanted;
+        if (clearance < 6.0) {
+            wanted = LandingGearBlock.DEPLOYED;
+        } else if (clearance < 10.0) {
+            wanted = 2;
+        } else if (clearance < 16.0) {
+            wanted = 1;
+        } else {
+            wanted = LandingGearBlock.FOLDED;
+        }
+
+        if (wanted == gearExtension) {
+            return;
+        }
+        gearExtension = wanted;
+
+        // Written in one pass with a single rebuild at the end: the per-block helper rebuilds
+        // every time, and a hull with six legs would otherwise walk its whole block list six
+        // times and resend the snapshot six times for one change.
+        for (StoredBlock gear : List.copyOf(landingGearBlocks)) {
+            int index = blocks.indexOf(gear);
+            if (index < 0) {
+                continue;
+            }
+            blocks.set(index, new StoredBlock(gear.localX(), gear.localY(), gear.localZ(),
+                    gear.state().setValue(LandingGearBlock.EXTENSION, wanted),
+                    gear.blockEntityData()));
+        }
+        rebuildDerivedData();
+    }
+
+    /** Distance from the bottom of the hull down to the first solid ground beneath it. */
+    private double groundClearance(ServerLevel level) {
+        double bottom = y + minLocalY;
+        int startY = (int) Math.floor(bottom);
+        int worldX = (int) Math.floor(toWorldX(pivotX, pivotZ));
+        int worldZ = (int) Math.floor(toWorldZ(pivotX, pivotZ));
+
+        // Twenty blocks is past the point where the gear is folded anyway, so looking further
+        // would only cost lookups to reach the same answer.
+        for (int offset = 1; offset <= 20; offset++) {
+            scratchPos.set(worldX, startY - offset, worldZ);
+            if (!level.getBlockState(scratchPos).isAir()) {
+                return offset;
+            }
+        }
+        return 20.0;
     }
 
     private void accelerateTowardHorizontalSpeed(double dirX, double dirZ, double targetSpeed, double maxAcceleration) {

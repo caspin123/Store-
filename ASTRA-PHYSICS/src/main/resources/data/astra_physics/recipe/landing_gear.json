@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "group": "astra_physics",
+  "pattern": [
+    "/I/",
+    "/I/",
+    "SIS"
+  ],
+  "key": {
+    "I": "minecraft:iron_ingot",
+    "S": "minecraft:smooth_stone_slab"
+  },
+  "result": {
+    "id": "astra_physics:landing_gear",
+    "count": 1
+  }
+}

@@ -1,0 +1,64 @@
+{
+  "variants": {
+    "facing=north,charge=0": {
+      "model": "astra_physics:block/physics_infuser_0"
+    },
+    "facing=north,charge=1": {
+      "model": "astra_physics:block/physics_infuser_1"
+    },
+    "facing=north,charge=2": {
+      "model": "astra_physics:block/physics_infuser_2"
+    },
+    "facing=north,charge=3": {
+      "model": "astra_physics:block/physics_infuser_3"
+    },
+    "facing=east,charge=0": {
+      "model": "astra_physics:block/physics_infuser_0",
+      "y": 90
+    },
+    "facing=east,charge=1": {
+      "model": "astra_physics:block/physics_infuser_1",
+      "y": 90
+    },
+    "facing=east,charge=2": {
+      "model": "astra_physics:block/physics_infuser_2",
+      "y": 90
+    },
+    "facing=east,charge=3": {
+      "model": "astra_physics:block/physics_infuser_3",
+      "y": 90
+    },
+    "facing=south,charge=0": {
+      "model": "astra_physics:block/physics_infuser_0",
+      "y": 180
+    },
+    "facing=south,charge=1": {
+      "model": "astra_physics:block/physics_infuser_1",
+      "y": 180
+    },
+    "facing=south,charge=2": {
+      "model": "astra_physics:block/physics_infuser_2",
+      "y": 180
+    },
+    "facing=south,charge=3": {
+      "model": "astra_physics:block/physics_infuser_3",
+      "y": 180
+    },
+    "facing=west,charge=0": {
+      "model": "astra_physics:block/physics_infuser_0",
+      "y": 270
+    },
+    "facing=west,charge=1": {
+      "model": "astra_physics:block/physics_infuser_1",
+      "y": 270
+    },
+    "facing=west,charge=2": {
+      "model": "astra_physics:block/physics_infuser_2",
+      "y": 270
+    },
+    "facing=west,charge=3": {
+      "model": "astra_physics:block/physics_infuser_3",
+      "y": 270
+    }
+  }
+}

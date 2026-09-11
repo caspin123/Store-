@@ -507,6 +507,101 @@ def stabilizer_frame(angle):
     return model(elements)
 
 
+# ------------------------------------------------------- assembly hardware
+
+INFUSER_CHARGE_STATES = 4
+LANDING_GEAR_STATES = 4
+INFUSER_CENTER = (8.0, 9.0, 8.0)
+
+
+def physics_infuser_frame(charge):
+    """A pedestal whose core lifts and lights as it takes hold of the hull.
+
+    Charge 0 is the block sitting in the world doing nothing; 1 to 3 cycle while it is part of a
+    live construct, which is the point of the animation - it is the one glance that tells a player
+    whether the pile of blocks in front of them is a ship or scenery.
+    """
+    lit = charge > 0
+    elements = [
+        # plinth
+        box((1, 0, 1), (15, 3, 15), "dark"),
+        box((2, 3, 2), (14, 4, 14), "metal"),
+        box((3, 4, 3), (13, 5, 13), "brass"),
+    ]
+    # four posts carrying the cage, left open so the core stays visible from every side
+    for x, z in ((2.0, 2.0), (12.0, 2.0), (2.0, 12.0), (12.0, 12.0)):
+        elements.append(box((x, 4, z), (x + 2, 13, z + 2), "metal"))
+    elements.extend([
+        box((2, 13, 2), (14, 15, 14), "dark"),
+        box((3, 15, 3), (13, 16, 13), "brass"),
+        # readout panel on the facing side
+        box((4.6, 5.4, 1.4), (11.4, 9.6, 2.2), "black"),
+        box((4.2, 5.0, 1.2), (11.8, 10.0, 1.6), "brass"),
+    ])
+
+    # three pips, one per charge step, so the state reads from across the deck
+    for index in range(3):
+        active = index < charge
+        elements.append(box((5.4 + index * 2.0, 6.2, 1.0), (6.6 + index * 2.0, 7.4, 1.5),
+                            "cyan" if active else "black",
+                            shade=False if active else None))
+
+    # the core: parked and dark when idle, risen and lit while the construct is live
+    half = 1.4 + charge * 0.30
+    core_y = 7.6 + charge * 0.45
+    elements.append(box((8.0 - half, core_y - half, 8.0 - half),
+                        (8.0 + half, core_y + half, 8.0 + half),
+                        "cyan" if lit else "black",
+                        shade=False if lit else None))
+    if lit:
+        # a ring sweeping round the core, one step per charge level
+        for index in range(4):
+            elements.append(ring_part(INFUSER_CENTER, 4.6, charge * 22.5 + index * 90.0,
+                                      (3.2, 0.9), 1.0, "brass", axis="y"))
+    return model(elements)
+
+
+def landing_gear_frame(extension):
+    """A telescoping leg: folded into its sleeve at 0, fully run out at 3.
+
+    The leg reaches below the block it is mounted on, which is what a model may do and a collision
+    shape may not - the hull's own shell already covers the mounting block, so the wheel is
+    decoration hanging off the bottom rather than something to stand on.
+    """
+    drop = extension * 3.6
+
+    elements = [
+        # mounting plate against the hull
+        box((2, 13, 2), (14, 16, 14), "dark"),
+        box((3, 11, 3), (13, 13, 13), "metal"),
+        # fixed sleeve the first stage runs out of
+        box((5.0, 5.4, 5.0), (11.0, 6.4, 11.0), "metal"),
+        box((5.5, 6.0, 5.5), (10.5, 12.0, 10.5), "brass"),
+        # drag brace, so the leg is not a bare post
+        box((6.8, 6.5, 10.6), (9.2, 12.5, 12.0), "metal",
+            rotation=rotation((8.0, 12.5, 10.6), "x", -22.5)),
+    ]
+
+    # first stage slides down out of the sleeve, second stage out of the first
+    stage_one_bottom = 5.0 - drop * 0.5
+    elements.append(box((6.2, stage_one_bottom, 6.2), (9.8, 11.0, 9.8), "metal"))
+    stage_two_bottom = 4.0 - drop
+    elements.append(box((6.7, stage_two_bottom, 6.7), (9.3, stage_one_bottom + 1.6, 9.3), "brass"))
+
+    # axle and wheel
+    wheel_y = stage_two_bottom - 1.7
+    center = (8.0, wheel_y, 8.0)
+    elements.append(box((5.6, wheel_y - 0.8, 7.2), (10.4, wheel_y + 0.8, 8.8), "metal"))
+    for index in range(8):
+        elements.append(ring_part(center, 2.5, index * 45.0, (2.1, 1.2), 3.2, "black", axis="x"))
+    elements.append(box((6.6, wheel_y - 1.1, 6.9), (9.4, wheel_y + 1.1, 9.1), "brass"))
+
+    if extension == LANDING_GEAR_STATES - 1:
+        # a lit pip once the leg is down, visible from the deck above
+        elements.append(box((7.2, 12.2, 4.6), (8.8, 13.0, 5.4), "cyan", shade=False))
+    return model(elements)
+
+
 # ------------------------------------------------------------------- output
 
 def validate(name, payload):
@@ -630,6 +725,18 @@ def main():
         write_json(os.path.join(MODELS, f"balloon_{frame}.json"), balloon_frame(frame))
     write_blockstate("balloon", "swell", BALLOON_FRAMES, facings=False)
     generated.append(("balloon", BALLOON_FRAMES))
+
+    for charge in range(INFUSER_CHARGE_STATES):
+        write_json(os.path.join(MODELS, f"physics_infuser_{charge}.json"),
+                   physics_infuser_frame(charge))
+    write_blockstate("physics_infuser", "charge", INFUSER_CHARGE_STATES)
+    generated.append(("physics_infuser", INFUSER_CHARGE_STATES))
+
+    for extension in range(LANDING_GEAR_STATES):
+        write_json(os.path.join(MODELS, f"landing_gear_{extension}.json"),
+                   landing_gear_frame(extension))
+    write_blockstate("landing_gear", "extension", LANDING_GEAR_STATES)
+    generated.append(("landing_gear", LANDING_GEAR_STATES))
 
     for frame in range(PROPELLER_FRAMES):
         write_json(os.path.join(MODELS, f"propeller_{frame}.json"), propeller_frame(frame))

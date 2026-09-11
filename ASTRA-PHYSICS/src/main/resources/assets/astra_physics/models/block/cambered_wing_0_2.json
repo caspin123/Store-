@@ -1,0 +1,262 @@
+{
+  "ambientocclusion": true,
+  "textures": {
+    "particle": "minecraft:block/deepslate_tiles",
+    "dark": "minecraft:block/deepslate_tiles",
+    "metal": "minecraft:block/iron_block",
+    "brass": "minecraft:block/copper_block",
+    "wood": "minecraft:block/spruce_planks",
+    "cloth": "minecraft:block/white_wool",
+    "cyan": "minecraft:block/sea_lantern",
+    "grid": "minecraft:block/copper_grate",
+    "thrust": "minecraft:block/magma",
+    "black": "minecraft:block/polished_blackstone",
+    "casing": "astra_physics:block/balloon_casing"
+  },
+  "elements": [
+    {
+      "from": [
+        1.0,
+        7.8,
+        0.0
+      ],
+      "to": [
+        2.6,
+        9.8,
+        16.0
+      ],
+      "faces": {
+        "down": {
+          "texture": "#wood"
+        },
+        "up": {
+          "texture": "#wood"
+        },
+        "north": {
+          "texture": "#wood"
+        },
+        "south": {
+          "texture": "#wood"
+        },
+        "west": {
+          "texture": "#wood"
+        },
+        "east": {
+          "texture": "#wood"
+        }
+      }
+    },
+    {
+      "from": [
+        2.6,
+        7.14,
+        0.0
+      ],
+      "to": [
+        4.2,
+        9.74,
+        16.0
+      ],
+      "faces": {
+        "down": {
+          "texture": "#metal"
+        },
+        "up": {
+          "texture": "#metal"
+        },
+        "north": {
+          "texture": "#metal"
+        },
+        "south": {
+          "texture": "#metal"
+        },
+        "west": {
+          "texture": "#metal"
+        },
+        "east": {
+          "texture": "#metal"
+        }
+      }
+    },
+    {
+      "from": [
+        4.2,
+        6.8,
+        0.0
+      ],
+      "to": [
+        12.0,
+        9.36,
+        16.0
+      ],
+      "faces": {
+        "down": {
+          "texture": "#cloth"
+        },
+        "up": {
+          "texture": "#cloth"
+        },
+        "north": {
+          "texture": "#cloth"
+        },
+        "south": {
+          "texture": "#cloth"
+        },
+        "west": {
+          "texture": "#cloth"
+        },
+        "east": {
+          "texture": "#cloth"
+        }
+      }
+    },
+    {
+      "from": [
+        6.5,
+        6.5,
+        0.0
+      ],
+      "to": [
+        8.5,
+        9.3,
+        16.0
+      ],
+      "faces": {
+        "down": {
+          "texture": "#wood"
+        },
+        "up": {
+          "texture": "#wood"
+        },
+        "north": {
+          "texture": "#wood"
+        },
+        "south": {
+          "texture": "#wood"
+        },
+        "west": {
+          "texture": "#wood"
+        },
+        "east": {
+          "texture": "#wood"
+        }
+      }
+    },
+    {
+      "from": [
+        3.0,
+        6.4,
+        14.6
+      ],
+      "to": [
+        13.5,
+        9.4,
+        15.8
+      ],
+      "faces": {
+        "down": {
+          "texture": "#brass"
+        },
+        "up": {
+          "texture": "#brass"
+        },
+        "north": {
+          "texture": "#brass"
+        },
+        "south": {
+          "texture": "#brass"
+        },
+        "west": {
+          "texture": "#brass"
+        },
+        "east": {
+          "texture": "#brass"
+        }
+      }
+    },
+    {
+      "from": [
+        12.0,
+        6.1,
+        0.0
+      ],
+      "to": [
+        15.4,
+        7.9,
+        16.0
+      ],
+      "faces": {
+        "down": {
+          "texture": "#wood"
+        },
+        "up": {
+          "texture": "#wood"
+        },
+        "north": {
+          "texture": "#wood"
+        },
+        "south": {
+          "texture": "#wood"
+        },
+        "west": {
+          "texture": "#wood"
+        },
+        "east": {
+          "texture": "#wood"
+        }
+      },
+      "rotation": {
+        "origin": [
+          12.0,
+          7.8,
+          8.0
+        ],
+        "axis": "z",
+        "angle": -22.5,
+        "rescale": true
+      }
+    },
+    {
+      "from": [
+        12.4,
+        6.3,
+        0.3
+      ],
+      "to": [
+        15.2,
+        7.7,
+        15.7
+      ],
+      "faces": {
+        "down": {
+          "texture": "#cloth"
+        },
+        "up": {
+          "texture": "#cloth"
+        },
+        "north": {
+          "texture": "#cloth"
+        },
+        "south": {
+          "texture": "#cloth"
+        },
+        "west": {
+          "texture": "#cloth"
+        },
+        "east": {
+          "texture": "#cloth"
+        }
+      },
+      "rotation": {
+        "origin": [
+          12.0,
+          7.8,
+          8.0
+        ],
+        "axis": "z",
+        "angle": -22.5,
+        "rescale": true
+      }
+    }
+  ]
+}

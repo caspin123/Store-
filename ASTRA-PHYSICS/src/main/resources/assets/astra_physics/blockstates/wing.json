@@ -1,48 +1,183 @@
 {
   "variants": {
-    "facing=north,aileron=0": {
-      "model": "astra_physics:block/wing_0"
+    "facing=north,aileron=0,part=0": {
+      "model": "astra_physics:block/wing_0_0"
     },
-    "facing=north,aileron=1": {
-      "model": "astra_physics:block/wing_1"
+    "facing=north,aileron=0,part=1": {
+      "model": "astra_physics:block/wing_0_1"
     },
-    "facing=north,aileron=2": {
-      "model": "astra_physics:block/wing_2"
+    "facing=north,aileron=0,part=2": {
+      "model": "astra_physics:block/wing_0_2"
     },
-    "facing=east,aileron=0": {
-      "model": "astra_physics:block/wing_0",
+    "facing=north,aileron=0,part=3": {
+      "model": "astra_physics:block/wing_0_3"
+    },
+    "facing=north,aileron=1,part=0": {
+      "model": "astra_physics:block/wing_1_0"
+    },
+    "facing=north,aileron=1,part=1": {
+      "model": "astra_physics:block/wing_1_1"
+    },
+    "facing=north,aileron=1,part=2": {
+      "model": "astra_physics:block/wing_1_2"
+    },
+    "facing=north,aileron=1,part=3": {
+      "model": "astra_physics:block/wing_1_3"
+    },
+    "facing=north,aileron=2,part=0": {
+      "model": "astra_physics:block/wing_2_0"
+    },
+    "facing=north,aileron=2,part=1": {
+      "model": "astra_physics:block/wing_2_1"
+    },
+    "facing=north,aileron=2,part=2": {
+      "model": "astra_physics:block/wing_2_2"
+    },
+    "facing=north,aileron=2,part=3": {
+      "model": "astra_physics:block/wing_2_3"
+    },
+    "facing=east,aileron=0,part=0": {
+      "model": "astra_physics:block/wing_0_0",
       "y": 90
     },
-    "facing=east,aileron=1": {
-      "model": "astra_physics:block/wing_1",
+    "facing=east,aileron=0,part=1": {
+      "model": "astra_physics:block/wing_0_1",
       "y": 90
     },
-    "facing=east,aileron=2": {
-      "model": "astra_physics:block/wing_2",
+    "facing=east,aileron=0,part=2": {
+      "model": "astra_physics:block/wing_0_2",
       "y": 90
     },
-    "facing=south,aileron=0": {
-      "model": "astra_physics:block/wing_0",
+    "facing=east,aileron=0,part=3": {
+      "model": "astra_physics:block/wing_0_3",
+      "y": 90
+    },
+    "facing=east,aileron=1,part=0": {
+      "model": "astra_physics:block/wing_1_0",
+      "y": 90
+    },
+    "facing=east,aileron=1,part=1": {
+      "model": "astra_physics:block/wing_1_1",
+      "y": 90
+    },
+    "facing=east,aileron=1,part=2": {
+      "model": "astra_physics:block/wing_1_2",
+      "y": 90
+    },
+    "facing=east,aileron=1,part=3": {
+      "model": "astra_physics:block/wing_1_3",
+      "y": 90
+    },
+    "facing=east,aileron=2,part=0": {
+      "model": "astra_physics:block/wing_2_0",
+      "y": 90
+    },
+    "facing=east,aileron=2,part=1": {
+      "model": "astra_physics:block/wing_2_1",
+      "y": 90
+    },
+    "facing=east,aileron=2,part=2": {
+      "model": "astra_physics:block/wing_2_2",
+      "y": 90
+    },
+    "facing=east,aileron=2,part=3": {
+      "model": "astra_physics:block/wing_2_3",
+      "y": 90
+    },
+    "facing=south,aileron=0,part=0": {
+      "model": "astra_physics:block/wing_0_0",
       "y": 180
     },
-    "facing=south,aileron=1": {
-      "model": "astra_physics:block/wing_1",
+    "facing=south,aileron=0,part=1": {
+      "model": "astra_physics:block/wing_0_1",
       "y": 180
     },
-    "facing=south,aileron=2": {
-      "model": "astra_physics:block/wing_2",
+    "facing=south,aileron=0,part=2": {
+      "model": "astra_physics:block/wing_0_2",
       "y": 180
     },
-    "facing=west,aileron=0": {
-      "model": "astra_physics:block/wing_0",
+    "facing=south,aileron=0,part=3": {
+      "model": "astra_physics:block/wing_0_3",
+      "y": 180
+    },
+    "facing=south,aileron=1,part=0": {
+      "model": "astra_physics:block/wing_1_0",
+      "y": 180
+    },
+    "facing=south,aileron=1,part=1": {
+      "model": "astra_physics:block/wing_1_1",
+      "y": 180
+    },
+    "facing=south,aileron=1,part=2": {
+      "model": "astra_physics:block/wing_1_2",
+      "y": 180
+    },
+    "facing=south,aileron=1,part=3": {
+      "model": "astra_physics:block/wing_1_3",
+      "y": 180
+    },
+    "facing=south,aileron=2,part=0": {
+      "model": "astra_physics:block/wing_2_0",
+      "y": 180
+    },
+    "facing=south,aileron=2,part=1": {
+      "model": "astra_physics:block/wing_2_1",
+      "y": 180
+    },
+    "facing=south,aileron=2,part=2": {
+      "model": "astra_physics:block/wing_2_2",
+      "y": 180
+    },
+    "facing=south,aileron=2,part=3": {
+      "model": "astra_physics:block/wing_2_3",
+      "y": 180
+    },
+    "facing=west,aileron=0,part=0": {
+      "model": "astra_physics:block/wing_0_0",
       "y": 270
     },
-    "facing=west,aileron=1": {
-      "model": "astra_physics:block/wing_1",
+    "facing=west,aileron=0,part=1": {
+      "model": "astra_physics:block/wing_0_1",
       "y": 270
     },
-    "facing=west,aileron=2": {
-      "model": "astra_physics:block/wing_2",
+    "facing=west,aileron=0,part=2": {
+      "model": "astra_physics:block/wing_0_2",
+      "y": 270
+    },
+    "facing=west,aileron=0,part=3": {
+      "model": "astra_physics:block/wing_0_3",
+      "y": 270
+    },
+    "facing=west,aileron=1,part=0": {
+      "model": "astra_physics:block/wing_1_0",
+      "y": 270
+    },
+    "facing=west,aileron=1,part=1": {
+      "model": "astra_physics:block/wing_1_1",
+      "y": 270
+    },
+    "facing=west,aileron=1,part=2": {
+      "model": "astra_physics:block/wing_1_2",
+      "y": 270
+    },
+    "facing=west,aileron=1,part=3": {
+      "model": "astra_physics:block/wing_1_3",
+      "y": 270
+    },
+    "facing=west,aileron=2,part=0": {
+      "model": "astra_physics:block/wing_2_0",
+      "y": 270
+    },
+    "facing=west,aileron=2,part=1": {
+      "model": "astra_physics:block/wing_2_1",
+      "y": 270
+    },
+    "facing=west,aileron=2,part=2": {
+      "model": "astra_physics:block/wing_2_2",
+      "y": 270
+    },
+    "facing=west,aileron=2,part=3": {
+      "model": "astra_physics:block/wing_2_3",
       "y": 270
     }
   }

@@ -1,6 +1,7 @@
 package com.astra.physics.client.ship;
 
 import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.math.Axis;
 
 import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderContext;
 
@@ -8,12 +9,15 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.world.level.LightLayer;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.IntegerProperty;
 import net.minecraft.world.phys.Vec3;
 
 import com.astra.physics.block.AnimatedComponent;
+import com.astra.physics.block.AstraFacingBlock;
+import com.astra.physics.block.ConnectedComponent;
 import com.astra.physics.config.AstraConfig;
 
 /**
@@ -62,8 +66,14 @@ public final class ConstructRenderer {
             }
 
             float steer = steerOf(construct);
+            float renderYaw = (float) construct.renderYaw(alpha);
+
             matrices.pushPose();
             matrices.translate(baseX - camera.x, baseY - camera.y, baseZ - camera.z);
+            // Turn about the hull's own centre, matching the pivot the server collides around.
+            matrices.translate(construct.pivotX(), 0.0, construct.pivotZ());
+            matrices.mulPose(Axis.YP.rotationDegrees(renderYaw));
+            matrices.translate(-construct.pivotX(), 0.0, -construct.pivotZ());
 
             for (ClientPhysicsConstruct.ClientBlock block : construct.visibleBlocks()) {
                 if (budget-- <= 0) {
@@ -72,9 +82,11 @@ public final class ConstructRenderer {
                 matrices.pushPose();
                 matrices.translate(block.localX(), block.localY(), block.localZ());
 
-                BlockState renderState = animate(block.state(), construct, steer, seconds);
+                BlockState renderState = shape(block, construct, steer, seconds);
                 int light = lightAt(minecraft, config,
-                        baseX + block.localX(), baseY + block.localY(), baseZ + block.localZ());
+                        construct.renderToWorldX(block.localX() + 0.5, block.localZ() + 0.5, alpha),
+                        baseY + block.localY(),
+                        construct.renderToWorldZ(block.localX() + 0.5, block.localZ() + 0.5, alpha));
 
                 minecraft.getBlockRenderer().renderSingleBlock(
                         renderState, matrices, context.consumers(), light, OverlayTexture.NO_OVERLAY);
@@ -90,8 +102,41 @@ public final class ConstructRenderer {
      * <p>Cycling components advance on a continuous clock rather than a per-frame counter, so the
      * animation runs at the same speed regardless of the viewer's frame rate.
      */
-    private static BlockState animate(BlockState state, ClientPhysicsConstruct construct,
-                                      float steer, double seconds) {
+    /** Applies both the animation frame and the connected shape for one block. */
+    private static BlockState shape(ClientPhysicsConstruct.ClientBlock block,
+                                    ClientPhysicsConstruct construct, float steer, double seconds) {
+        BlockState state = connect(block, construct);
+        return animate(state, block, construct, steer, seconds);
+    }
+
+    /**
+     * Picks which piece of a tiled run this block draws, from the hull's own block list.
+     *
+     * <p>Construct blocks are not world blocks, so there are no neighbour updates to hook — the
+     * renderer is the only place that can see a wing's neighbours at all.
+     */
+    private static BlockState connect(ClientPhysicsConstruct.ClientBlock block,
+                                      ClientPhysicsConstruct construct) {
+        BlockState state = block.state();
+        if (!(state.getBlock() instanceof ConnectedComponent connected)) {
+            return state;
+        }
+        IntegerProperty property = connected.connectionProperty();
+        if (!state.hasProperty(property)) {
+            return state;
+        }
+
+        Direction facing = state.hasProperty(AstraFacingBlock.FACING)
+                ? state.getValue(AstraFacingBlock.FACING)
+                : Direction.NORTH;
+        int value = connected.connectionValue(facing, (dx, dy, dz) -> construct.hasBlockAt(
+                state.getBlock(),
+                block.localX() + dx, block.localY() + dy, block.localZ() + dz));
+        return state.setValue(property, value);
+    }
+
+    private static BlockState animate(BlockState state, ClientPhysicsConstruct.ClientBlock block,
+                                      ClientPhysicsConstruct construct, float steer, double seconds) {
         if (!(state.getBlock() instanceof AnimatedComponent component)) {
             return state;
         }
@@ -101,9 +146,14 @@ public final class ConstructRenderer {
         }
 
         int frames = Math.max(1, component.frameCount());
+        int phase = component.phaseOffset(block.localX(), block.localY(), block.localZ());
         int frame;
 
         switch (component.drive()) {
+            case MANUAL -> {
+                // The stored state already carries the setting the player chose.
+                return state;
+            }
             case STEER -> {
                 // -1..1 maps onto the full frame range, with the middle frame as neutral.
                 float normalised = (steer + 1.0F) * 0.5F;
@@ -116,7 +166,8 @@ public final class ConstructRenderer {
                 } else {
                     int cycling = frames - 1;
                     frame = 1 + (int) Math.floorMod(
-                            (long) Math.floor(seconds * activity * component.speedFactor() * cycling),
+                            (long) Math.floor(seconds * activity * component.speedFactor() * cycling)
+                                    + phase,
                             cycling);
                 }
             }
@@ -126,7 +177,8 @@ public final class ConstructRenderer {
                     frame = 0;
                 } else {
                     frame = (int) Math.floorMod(
-                            (long) Math.floor(seconds * activity * component.speedFactor() * frames),
+                            (long) Math.floor(seconds * activity * component.speedFactor() * frames)
+                                    + phase,
                             frames);
                 }
             }

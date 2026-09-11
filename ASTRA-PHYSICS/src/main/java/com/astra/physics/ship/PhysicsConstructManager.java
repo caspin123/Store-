@@ -38,8 +38,11 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
 import com.astra.physics.AstraPhysics;
+import com.astra.physics.block.AltimeterBlock;
 import com.astra.physics.block.AstraFacingBlock;
+import com.astra.physics.block.GovernorBlock;
 import com.astra.physics.config.AstraConfig;
+import com.astra.physics.item.WandMode;
 import com.astra.physics.network.ConstructBreakBlockPayload;
 import com.astra.physics.network.ConstructControlPayload;
 import com.astra.physics.network.ConstructInteractPayload;
@@ -51,6 +54,7 @@ import com.astra.physics.network.ConstructSpawnPayload.NetBlock;
 import com.astra.physics.network.ConstructTransformPayload;
 import com.astra.physics.network.PilotStatePayload;
 import com.astra.physics.registry.AstraBlocks;
+import com.astra.physics.registry.AstraItems;
 import com.astra.physics.util.AstraText;
 
 /**
@@ -69,13 +73,20 @@ public final class PhysicsConstructManager {
     private static final Map<ResourceKey<Level>, Map<UUID, PhysicsConstruct>> BY_LEVEL = new HashMap<>();
     private static final Map<UUID, PilotSession> PILOTS = new HashMap<>();
     private static final Map<UUID, Set<UUID>> TRACKED_BY_PLAYER = new HashMap<>();
+    private static final Map<UUID, WandMode> WAND_MODES = new HashMap<>();
+    private static final Map<UUID, GrabSession> GRABS = new HashMap<>();
 
     private static final double STAND_BELOW_TOLERANCE = 0.60;
     private static final double STAND_ABOVE_TOLERANCE = 0.75;
     /** Autosave interval in ticks. Ten minutes, matching vanilla's own autosave cadence. */
     private static final long AUTOSAVE_INTERVAL_TICKS = 12_000L;
+    /** How often a pilot's instrument readout refreshes, in ticks. */
+    private static final long PILOT_READOUT_INTERVAL = 5L;
 
     private PhysicsConstructManager() {}
+
+    /** A construct being carried on the end of a player's gaze. */
+    private record GrabSession(UUID constructId, double distance) {}
 
     /** Per-pilot state, including the token bucket that bounds inbound control packets. */
     private static final class PilotSession {
@@ -132,6 +143,98 @@ public final class PhysicsConstructManager {
     public static void onPlayerDisconnect(ServerPlayer player) {
         PILOTS.remove(player.getUUID());
         TRACKED_BY_PLAYER.remove(player.getUUID());
+        WAND_MODES.remove(player.getUUID());
+        // A carried construct must be let go, or it would hang in the air waiting for a carrier
+        // who is never coming back.
+        GRABS.remove(player.getUUID());
+    }
+
+    public static WandMode wandMode(ServerPlayer player) {
+        return WAND_MODES.getOrDefault(player.getUUID(), WandMode.ASSEMBLE);
+    }
+
+    /** Advances the player's wand to its next mode and tells them which it is. */
+    public static void cycleWandMode(ServerPlayer player) {
+        WandMode mode = wandMode(player).next();
+        WAND_MODES.put(player.getUUID(), mode);
+        // Changing mode lets go of anything being carried, so a mode switch can never strand a
+        // construct in mid-air.
+        GRABS.remove(player.getUUID());
+        AstraText.sendActionBar(player,
+                AstraText.info("wand.mode", AstraText.plain(mode.translationKey())));
+    }
+
+    /**
+     * Handles a wand click on a construct, which is what the disassemble and grab modes are.
+     *
+     * @return true when the wand consumed the click
+     */
+    public static boolean handleWandOnConstruct(ServerPlayer player, PhysicsConstruct construct) {
+        WandMode mode = wandMode(player);
+        ServerLevel level = player.level();
+
+        switch (mode) {
+            case DISASSEMBLE -> {
+                if (!player.mayBuild()) {
+                    AstraText.sendActionBar(player, AstraText.warning("wand.not_allowed"));
+                    return true;
+                }
+                int placed = disassemble(level, construct.id(), player);
+                if (placed < 0) {
+                    AstraText.sendActionBar(player, AstraText.warning("command.not_found"));
+                }
+                return true;
+            }
+            case GRAB -> {
+                GrabSession existing = GRABS.get(player.getUUID());
+                if (existing != null) {
+                    GRABS.remove(player.getUUID());
+                    AstraText.sendActionBar(player, AstraText.info("wand.released"));
+                    return true;
+                }
+                double distance = player.getEyePosition().distanceTo(
+                        construct.boundingBox().getCenter());
+                GRABS.put(player.getUUID(), new GrabSession(construct.id(),
+                        Math.max(3.0, Math.min(AstraConfig.get().maxGrabDistance, distance))));
+                AstraText.sendActionBar(player, AstraText.success("wand.grabbed",
+                        construct.blockCount()));
+                return true;
+            }
+            default -> {
+                return false;
+            }
+        }
+    }
+
+    /** Drives every carried construct toward where its carrier is looking. */
+    private static void tickGrabs(ServerLevel level) {
+        if (GRABS.isEmpty()) {
+            return;
+        }
+        double maxBlocks = AstraConfig.get().maxGrabBlocks;
+
+        for (ServerPlayer player : level.players()) {
+            GrabSession session = GRABS.get(player.getUUID());
+            if (session == null) {
+                continue;
+            }
+            PhysicsConstruct construct = get(level, session.constructId());
+            if (construct == null) {
+                GRABS.remove(player.getUUID());
+                continue;
+            }
+            // A hull far larger than the carrier can lift is simply too heavy to pick up.
+            if (construct.blockCount() > maxBlocks) {
+                GRABS.remove(player.getUUID());
+                AstraText.sendActionBar(player, AstraText.warning("wand.too_heavy",
+                        construct.blockCount(), (int) maxBlocks));
+                continue;
+            }
+
+            Vec3 target = player.getEyePosition()
+                    .add(player.getLookAngle().scale(session.distance()));
+            construct.setGrabTarget(target.x, target.y, target.z);
+        }
     }
 
     // -------------------------------------------------------------- assembly
@@ -232,7 +335,8 @@ public final class PhysicsConstructManager {
 
         AstraText.sendActionBar(player, AstraText.success("assemble.done",
                 stored.size(), blockEntityCount, construct.engineCount(), construct.propellerCount(),
-                construct.sailCount(), construct.wingCount(), construct.thrusterCount()));
+                construct.sailCount(), construct.wingCount(), construct.thrusterCount(),
+                construct.reactionWheelCount(), construct.balloonCount()));
         AstraPhysics.LOGGER.info("{} assembled ASTRA construct {} with {} blocks and {} BlockEntities in {}",
                 player.getScoreboardName(), id, stored.size(), blockEntityCount,
                 serverLevel.dimension().identifier());
@@ -402,15 +506,18 @@ public final class PhysicsConstructManager {
             return;
         }
 
-        BlockState state = orientPlacedState(blockItem.getBlock().defaultBlockState(), player, payload.face());
+        BlockState state = orientPlacedState(
+                blockItem.getBlock().defaultBlockState(), player, payload.face(), construct);
         if (state.isAir() || !state.getFluidState().isEmpty()) {
             AstraText.sendActionBar(player, AstraText.warning("place.fluid"));
             return;
         }
 
+        double targetCentreX = construct.toWorldX(targetX + 0.5, targetZ + 0.5);
+        double targetCentreZ = construct.toWorldZ(targetX + 0.5, targetZ + 0.5);
         AABB targetBox = new AABB(
-                construct.x() + targetX, construct.y() + targetY, construct.z() + targetZ,
-                construct.x() + targetX + 1.0, construct.y() + targetY + 1.0, construct.z() + targetZ + 1.0
+                targetCentreX - 0.5, construct.y() + targetY, targetCentreZ - 0.5,
+                targetCentreX + 0.5, construct.y() + targetY + 1.0, targetCentreZ + 0.5
         );
         if (!level.noBlockCollision(null, targetBox)) {
             AstraText.sendActionBar(player, AstraText.warning("place.through_terrain"));
@@ -496,6 +603,13 @@ public final class PhysicsConstructManager {
             return;
         }
 
+        // The wand acts on the whole construct, so it takes priority over whichever block was
+        // actually under the cursor.
+        if (player.getItemInHand(payload.hand()).getItem() == AstraItems.PHYSICS_WAND
+                && handleWandOnConstruct(player, construct)) {
+            return;
+        }
+
         if (block.state().is(AstraBlocks.ENGINE)) {
             if (player.isShiftKeyDown()) {
                 PhysicsConstruct.EngineMode mode = construct.toggleEngineMode();
@@ -512,6 +626,34 @@ public final class PhysicsConstructManager {
 
         if (block.state().is(AstraBlocks.HELM)) {
             handleHelmInteraction(player, construct, payload);
+            return;
+        }
+
+        if (block.state().is(AstraBlocks.ALTIMETER)) {
+            boolean armed = construct.toggleAltitudeHold();
+            // The armed light lives on the block, so the change has to be written back into the
+            // stored state for every client to see it.
+            construct.setLocalBlockProperty(block, AltimeterBlock.READOUT, armed ? 1 : 0);
+            AstraText.sendActionBar(player, armed
+                    ? AstraText.success("altimeter.armed", String.format(java.util.Locale.ROOT,
+                            "%.0f", construct.targetAltitude()))
+                    : AstraText.info("altimeter.off"));
+            return;
+        }
+
+        if (block.state().is(AstraBlocks.GYRO)) {
+            boolean armed = construct.toggleHeadingHold();
+            AstraText.sendActionBar(player, armed
+                    ? AstraText.success("gyro.armed", compass(construct.targetYaw()))
+                    : AstraText.info("gyro.off"));
+            return;
+        }
+
+        if (block.state().is(AstraBlocks.GOVERNOR)) {
+            int step = construct.cycleSpeedLimit();
+            construct.setLocalBlockProperty(block, GovernorBlock.LIMIT, step);
+            AstraText.sendActionBar(player, AstraText.info("governor.set",
+                    (int) Math.round(construct.speedLimitScale() * 100.0)));
             return;
         }
 
@@ -605,7 +747,7 @@ public final class PhysicsConstructManager {
         if (!acceptControlPacket(level, session)) {
             return;
         }
-        construct.applyHelmInput(payload.safeThrottle(), payload.safeSteer());
+        construct.applyHelmInput(payload.safeThrottle(), payload.safeSteer(), payload.safeLift());
     }
 
     /**
@@ -672,6 +814,8 @@ public final class PhysicsConstructManager {
             return;
         }
 
+        tickGrabs(level);
+
         for (PhysicsConstruct construct : constructs.values()) {
             construct.tick(level);
         }
@@ -724,7 +868,8 @@ public final class PhysicsConstructManager {
                 }
                 if (moved) {
                     send(player, ConstructTransformPayload.TYPE, new ConstructTransformPayload(
-                            construct.id(), construct.x(), construct.y(), construct.z()));
+                            construct.id(), construct.x(), construct.y(), construct.z(),
+                            (float) construct.yaw()));
                 }
             }
             construct.clearStructureDirty();
@@ -735,7 +880,7 @@ public final class PhysicsConstructManager {
     private static ConstructStatePayload statePayloadFor(PhysicsConstruct construct) {
         return new ConstructStatePayload(
                 construct.id(),
-                construct.enginePowerStep(),
+                construct.effectivePowerStep(),
                 construct.engineMode() == PhysicsConstruct.EngineMode.AIRCRAFT,
                 construct.netThrottle(),
                 construct.netSteer());
@@ -749,7 +894,7 @@ public final class PhysicsConstructManager {
                     Block.getId(block.state())));
         }
         send(player, ConstructSpawnPayload.TYPE, new ConstructSpawnPayload(
-                construct.id(), construct.x(), construct.y(), construct.z(),
+                construct.id(), construct.x(), construct.y(), construct.z(), (float) construct.yaw(),
                 construct.sizeX(), construct.sizeY(), construct.sizeZ(), List.copyOf(netBlocks)));
     }
 
@@ -783,7 +928,60 @@ public final class PhysicsConstructManager {
             return false;
         }
         anchorPilot(player, construct);
+        sendPilotReadout(player, construct);
         return true;
+    }
+
+    /**
+     * Live instruments for whoever is at the wheel.
+     *
+     * <p>A pilot otherwise has no way to tell how fast they are going, which way the hull is
+     * pointing, or whether the engine is even running — all of which decide whether the craft
+     * will turn or climb. It goes to the action bar rather than a custom HUD so it costs no new
+     * rendering and shows up identically on desktop and on touch controls.
+     */
+    private static void sendPilotReadout(ServerPlayer player, PhysicsConstruct construct) {
+        if (player.level().getGameTime() % PILOT_READOUT_INTERVAL != 0L) {
+            return;
+        }
+
+        double speed = Math.sqrt(construct.vx() * construct.vx() + construct.vz() * construct.vz());
+        double climb = construct.vy();
+
+        Component power = construct.enginesEnabled()
+                ? Component.literal(construct.enginePowerPercent() + "%")
+                : AstraText.plain("engine.off");
+
+        // Autopilot state belongs on the instruments line: a pilot has to be able to see that
+        // something else is flying the craft, or they will fight it without knowing why.
+        StringBuilder auto = new StringBuilder();
+        if (construct.altitudeHold() && construct.altimeterCount() > 0) {
+            auto.append(String.format(java.util.Locale.ROOT, " ALT %.0f", construct.targetAltitude()));
+        }
+        if (construct.headingHold() && construct.gyroCount() > 0) {
+            auto.append(" HDG ").append(compass(construct.targetYaw()));
+        }
+        if (construct.speedLimitStep() != GovernorBlock.UNRESTRICTED) {
+            auto.append(String.format(java.util.Locale.ROOT, " LIM %.0f%%",
+                    construct.speedLimitScale() * 100.0));
+        }
+
+        AstraText.sendActionBar(player, AstraText.info("helm.readout",
+                String.format(java.util.Locale.ROOT, "%.1f", speed * 20.0),
+                String.format(java.util.Locale.ROOT, "%+.1f", climb * 20.0),
+                String.format(java.util.Locale.ROOT, "%.0f", construct.y()),
+                compass(construct.yaw()),
+                power,
+                modeLabel(construct.engineMode()),
+                auto.toString()));
+    }
+
+    /** Eight-point compass name for a heading, so a pilot can hold a course. */
+    private static String compass(double yaw) {
+        String[] points = {"N", "NE", "E", "SE", "S", "SW", "W", "NW"};
+        // Local forward is +Z, which is south in world terms, so the table starts there.
+        int index = (int) Math.floor(((yaw + 180.0) % 360.0 + 360.0) % 360.0 / 45.0 + 0.5) % 8;
+        return points[index];
     }
 
     /**
@@ -808,11 +1006,21 @@ public final class PhysicsConstructManager {
 
         // The wheel is modelled on the FACING side. 0.90 keeps the player's body outside the
         // helm's own cell while their hands and camera stay at the wheel.
+        // The standing spot is worked out in local space and then rotated, so the pilot stays at
+        // the wheel whichever way the ship is pointing.
+        double standLocalX = helm.localX() + 0.5 + facing.getStepX() * 0.90;
+        double standLocalZ = helm.localZ() + 0.5 + facing.getStepZ() * 0.90;
         player.setPos(
-                construct.x() + helm.localX() + 0.5 + facing.getStepX() * 0.90,
+                construct.toWorldX(standLocalX, standLocalZ),
                 construct.y() + helm.localY(),
-                construct.z() + helm.localZ() + 0.5 + facing.getStepZ() * 0.90
+                construct.toWorldZ(standLocalX, standLocalZ)
         );
+        // Turning the ship turns the pilot with it, so the view stays fixed relative to the deck
+        // rather than the world - otherwise a turn would swing the horizon past a motionless head.
+        double yawDelta = construct.deltaYaw();
+        if (Math.abs(yawDelta) > 1.0E-4) {
+            player.setYRot((float) (player.getYRot() + yawDelta));
+        }
         player.setDeltaMovement(Vec3.ZERO);
         player.setOnGround(true);
         player.resetFallDistance();
@@ -837,8 +1045,13 @@ public final class PhysicsConstructManager {
                 continue;
             }
 
-            double carriedX = player.getX() + construct.deltaX();
-            double carriedZ = player.getZ() + construct.deltaZ();
+            // Where the rider stood on the deck last tick, mapped to where that same deck spot
+            // is now. A plain position delta would carry them along a translation but leave them
+            // behind when the hull turned under their feet.
+            double localX = construct.previousToLocalX(player.getX(), player.getZ());
+            double localZ = construct.previousToLocalZ(player.getX(), player.getZ());
+            double carriedX = construct.toWorldX(localX, localZ);
+            double carriedZ = construct.toWorldZ(localX, localZ);
             double currentTop = construct.supportSurfaceY(
                     carriedX, carriedZ, player.getY() + construct.deltaY(), false);
             if (Double.isNaN(currentTop)) {
@@ -846,6 +1059,10 @@ public final class PhysicsConstructManager {
             }
 
             player.setPos(carriedX, currentTop, carriedZ);
+            double yawDelta = construct.deltaYaw();
+            if (Math.abs(yawDelta) > 1.0E-4) {
+                player.setYRot((float) (player.getYRot() + yawDelta));
+            }
             resolveHorizontalCollisions(player, construct);
             player.setOnGround(true);
             player.resetFallDistance();
@@ -865,10 +1082,10 @@ public final class PhysicsConstructManager {
      */
     private static void resolveHorizontalCollisions(ServerPlayer player, PhysicsConstruct construct) {
         for (StoredBlock block : construct.blocksNear(player.getX(), player.getZ())) {
-            double bx0 = construct.x() + block.localX();
+            double cx = construct.toWorldX(block.localX() + 0.5, block.localZ() + 0.5);
+            double cz = construct.toWorldZ(block.localX() + 0.5, block.localZ() + 0.5);
             double by0 = construct.y() + block.localY();
-            double bz0 = construct.z() + block.localZ();
-            AABB blockBox = new AABB(bx0, by0, bz0, bx0 + 1.0, by0 + 1.0, bz0 + 1.0);
+            AABB blockBox = new AABB(cx - 0.5, by0, cz - 0.5, cx + 0.5, by0 + 1.0, cz + 0.5);
             AABB playerBox = player.getBoundingBox();
             if (!playerBox.intersects(blockBox)) {
                 continue;
@@ -899,8 +1116,12 @@ public final class PhysicsConstructManager {
      * be pointed at construct-local coordinates yet, so the common direction properties are
      * preserved explicitly until a real ShipLevel exists.
      */
-    private static BlockState orientPlacedState(BlockState state, ServerPlayer player, Direction hitFace) {
-        Direction horizontal = Direction.fromYRot(player.getYRot()).getOpposite();
+    private static BlockState orientPlacedState(BlockState state, ServerPlayer player,
+                                                Direction hitFace, PhysicsConstruct construct) {
+        // Blocks are stored in the hull's own space, so "the way the player is facing" has to be
+        // expressed there as well. Without subtracting the hull's yaw, a block placed on a turned
+        // ship would point somewhere else entirely once the ship straightened out.
+        Direction horizontal = Direction.fromYRot(player.getYRot() - construct.yaw()).getOpposite();
 
         if (state.hasProperty(AstraFacingBlock.FACING)) {
             // Edge-mounted parts should point away from the face they were attached to.
@@ -963,9 +1184,9 @@ public final class PhysicsConstructManager {
         // client sending the packet and the server handling it.
         double allowed = (reach + 2.0) * (reach + 2.0);
         return player.getEyePosition().distanceToSqr(
-                construct.x() + localX + 0.5,
+                construct.toWorldX(localX + 0.5, localZ + 0.5),
                 construct.y() + localY + 0.5,
-                construct.z() + localZ + 0.5) <= allowed;
+                construct.toWorldZ(localX + 0.5, localZ + 0.5)) <= allowed;
     }
 
     private static void openLocalContainer(ServerPlayer player, ConstructBlockEntityData data, Component blockName) {
@@ -1013,6 +1234,7 @@ public final class PhysicsConstructManager {
         for (UUID playerId : releasedPilots) {
             PILOTS.remove(playerId);
         }
+        GRABS.values().removeIf(session -> session.constructId().equals(id));
 
         ConstructRemovePayload payload = new ConstructRemovePayload(id);
         for (ServerPlayer target : level.players()) {

@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "group": "astra_physics",
+  "pattern": [
+    "/I/",
+    "IEI",
+    "/I/"
+  ],
+  "key": {
+    "I": "minecraft:iron_ingot",
+    "E": "minecraft:ender_eye"
+  },
+  "result": {
+    "id": "astra_physics:gyro",
+    "count": 1
+  }
+}

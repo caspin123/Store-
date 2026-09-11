@@ -12,6 +12,7 @@ import net.minecraft.world.phys.Vec3;
 import com.astra.physics.block.AstraFacingBlock;
 import com.astra.physics.network.ConstructControlPayload;
 import com.astra.physics.network.PilotExitPayload;
+import com.astra.physics.client.AstraKeys;
 import com.astra.physics.registry.AstraBlocks;
 
 /**
@@ -27,6 +28,7 @@ public final class ClientHelmController {
     private static int releaseGuardTicks;
     private static float lastThrottle;
     private static float lastSteer;
+    private static float lastLift;
     private static float visualSteer;
     private static int helmX;
     private static int helmY;
@@ -58,6 +60,7 @@ public final class ClientHelmController {
         releaseGuardTicks = active ? 6 : 0;
         lastThrottle = 0.0F;
         lastSteer = 0.0F;
+        lastLift = 0.0F;
         visualSteer = 0.0F;
     }
 
@@ -99,31 +102,38 @@ public final class ClientHelmController {
         }
 
         if (releaseGuardTicks > 0) releaseGuardTicks--;
-        if (releaseGuardTicks <= 0 && (client.options.keyShift.isDown() || client.options.keyJump.isDown())) {
+        // Jump and sneak are the climb and dive controls now, so they can no longer double as
+        // "leave the helm". Right-clicking the wheel still lets go, and so does the dedicated
+        // key, which is what makes a flying craft controllable at all.
+        if (releaseGuardTicks <= 0 && AstraKeys.leaveHelmPressed()) {
             requestRelease();
             return;
         }
 
         float throttle = 0.0F;
         float steer = 0.0F;
+        float lift = 0.0F;
         if (client.options.keyUp.isDown()) throttle += 1.0F;
         if (client.options.keyDown.isDown()) throttle -= 1.0F;
         if (client.options.keyLeft.isDown()) steer -= 1.0F;
         if (client.options.keyRight.isDown()) steer += 1.0F;
+        if (client.options.keyJump.isDown()) lift += 1.0F;
+        if (client.options.keyShift.isDown()) lift -= 1.0F;
 
         // The wheel eases toward the input rather than snapping. With five baked wheel positions
         // the easing is what makes a turn read as a turn instead of a jump.
         visualSteer += (steer - visualSteer) * 0.35F;
 
-        boolean changed = throttle != lastThrottle || steer != lastSteer;
+        boolean changed = throttle != lastThrottle || steer != lastSteer || lift != lastLift;
         if (sendCooldown > 0) sendCooldown--;
         if ((changed || sendCooldown <= 0) && ClientPlayNetworking.canSend(ConstructControlPayload.TYPE)) {
-            ClientPlayNetworking.send(new ConstructControlPayload(controlledConstruct, throttle, steer));
+            ClientPlayNetworking.send(new ConstructControlPayload(controlledConstruct, throttle, steer, lift));
             if (steer != lastSteer && Math.abs(steer) > 0.01F) {
                 client.player.swing(steer < 0.0F ? InteractionHand.MAIN_HAND : InteractionHand.OFF_HAND);
             }
             lastThrottle = throttle;
             lastSteer = steer;
+            lastLift = lift;
             sendCooldown = 2;
         }
 
@@ -136,9 +146,25 @@ public final class ClientHelmController {
                 ? helm.state().getValue(AstraFacingBlock.FACING)
                 : Direction.NORTH;
 
-        double px = construct.x() + helm.localX() + 0.5 + facing.getStepX() * 0.90;
+        double standLocalX = helm.localX() + 0.5 + facing.getStepX() * 0.90;
+        double standLocalZ = helm.localZ() + 0.5 + facing.getStepZ() * 0.90;
+
+        double px = construct.toWorldX(standLocalX, standLocalZ);
         double py = construct.y() + helm.localY();
-        double pz = construct.z() + helm.localZ() + 0.5 + facing.getStepZ() * 0.90;
+        double pz = construct.toWorldZ(standLocalX, standLocalZ);
+
+        // This is the piloting shake. The ship is drawn interpolated between two snapshots, but
+        // the pilot was being placed on the newest snapshot outright - so the deck the player saw
+        // and the spot they stood on disagreed by up to one tick of travel, every tick.
+        //
+        // Setting the previous position to the previous snapshot makes the camera's own
+        // interpolation follow exactly the same path the hull is drawn along, so the view sits
+        // still relative to the deck.
+        // xo/yo/zo is what Entity interpolates the camera from, so pointing it at the previous
+        // snapshot makes the camera trace exactly the path the hull is drawn along.
+        client.player.xo = construct.renderToWorldX(standLocalX, standLocalZ, 0.0F);
+        client.player.yo = construct.previousY() + helm.localY();
+        client.player.zo = construct.renderToWorldZ(standLocalX, standLocalZ, 0.0F);
 
         client.player.setPos(px, py, pz);
         client.player.setDeltaMovement(Vec3.ZERO);

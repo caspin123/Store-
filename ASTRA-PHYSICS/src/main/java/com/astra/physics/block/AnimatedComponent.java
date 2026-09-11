@@ -29,6 +29,8 @@ public interface AnimatedComponent {
      *   <li>{@link Drive#CYCLE_FROM_ONE} keeps frame 0 as the idle pose and cycles the rest, for
      *       components that must look inert when they are not running.</li>
      *   <li>{@link Drive#STEER} maps the helm's steering input onto the frame range.</li>
+     *   <li>{@link Drive#MANUAL} leaves the frame alone: it is a setting the player chose, stored
+     *       on the block itself, not something that moves on its own.</li>
      * </ul>
      */
     Drive drive();
@@ -52,9 +54,21 @@ public interface AnimatedComponent {
         return enginePower;
     }
 
+    /**
+     * Frame offset for a block at a given local position.
+     *
+     * <p>A tiled component covering many blocks would otherwise pulse as one flat sheet. Shifting
+     * each block a frame along its position turns the same loop into a wave crossing the surface,
+     * at no extra cost.
+     */
+    default int phaseOffset(int localX, int localY, int localZ) {
+        return 0;
+    }
+
     enum Drive {
         CYCLE,
         CYCLE_FROM_ONE,
-        STEER
+        STEER,
+        MANUAL
     }
 }

@@ -15,9 +15,13 @@ ASSETS = os.path.join(ROOT, "src", "main", "resources", "assets", "astra_physics
 DATA = os.path.join(ROOT, "src", "main", "resources", "data", "astra_physics")
 MINECRAFT_TAGS = os.path.join(ROOT, "src", "main", "resources", "data", "minecraft", "tags")
 
-BLOCKS = ("helm", "engine", "propeller", "sail", "wing", "thruster")
-PICKAXE_BLOCKS = ("engine", "propeller", "wing", "thruster")
+BLOCKS = ("helm", "engine", "propeller", "sail", "wing", "thruster",
+          "reaction_wheel", "balloon", "cambered_wing", "stabilizer",
+          "altimeter", "governor", "gyro")
+PICKAXE_BLOCKS = ("engine", "propeller", "wing", "thruster", "reaction_wheel",
+                  "cambered_wing", "stabilizer", "altimeter", "governor", "gyro")
 AXE_BLOCKS = ("helm",)
+SHEAR_BLOCKS = ("sail", "balloon")
 
 ENGLISH = {
     "itemGroup.astra_physics": "ASTRA Physics",
@@ -28,8 +32,19 @@ ENGLISH = {
     "block.astra_physics.sail": "ASTRA Sail",
     "block.astra_physics.wing": "ASTRA Wing",
     "block.astra_physics.thruster": "ASTRA Thruster",
+    "block.astra_physics.reaction_wheel": "ASTRA Reaction Wheel",
+    "block.astra_physics.balloon": "ASTRA Balloon",
+    "block.astra_physics.cambered_wing": "ASTRA Cambered Wing",
+    "block.astra_physics.stabilizer": "ASTRA Stabilizer",
+    "block.astra_physics.altimeter": "ASTRA Altimeter",
+    "block.astra_physics.governor": "ASTRA Governor",
+    "block.astra_physics.gyro": "ASTRA Gyro",
 
     "message.astra_physics.prefix": "ASTRA ",
+
+    "key.categories.astra_physics": "ASTRA Physics",
+    "key.astra_physics.leave_helm": "Leave Helm",
+    "key.astra_physics.wand_mode": "Cycle Wand Mode",
 
     "message.astra_physics.selection.point1":
         "Point 1 set at %s. Right-click point 2, or sneak + right-click to clear.",
@@ -58,7 +73,7 @@ ENGLISH = {
     "message.astra_physics.assemble.nothing_left": "Nothing left to assemble.",
     "message.astra_physics.assemble.done":
         "Construct assembled: %s blocks, %s block entities, %s engines, %s propellers, "
-        "%s sails, %s wings, %s thrusters.",
+        "%s sails, %s wings, %s thrusters, %s reaction wheels, %s balloons.",
     "message.astra_physics.disassemble.done":
         "Construct disassembled: %s blocks placed, %s dropped as items.",
 
@@ -79,8 +94,23 @@ ENGLISH = {
     "message.astra_physics.drive.sail": "sail drive",
     "message.astra_physics.drive.none": "no propulsion",
     "message.astra_physics.helm.engaged":
-        "At the helm with %s. W and S for throttle, A and D to steer, sneak or jump to let go.",
+        "At the helm with %s. W and S drive, A and D turn the ship, jump and sneak climb and dive, G lets go.",
+    "message.astra_physics.altimeter.armed": "Altitude hold armed at %s.",
+    "message.astra_physics.altimeter.off": "Altitude hold off.",
+    "message.astra_physics.gyro.armed": "Heading hold armed on %s.",
+    "message.astra_physics.gyro.off": "Heading hold off.",
+    "message.astra_physics.governor.set": "Speed limit %s%%.",
+    "message.astra_physics.wand.mode": "Wand mode: %s.",
+    "message.astra_physics.wand.mode.assemble": "Assemble",
+    "message.astra_physics.wand.mode.disassemble": "Disassemble",
+    "message.astra_physics.wand.mode.grab": "Grab",
+    "message.astra_physics.wand.grabbed": "Carrying a %s block construct. Click again to let go.",
+    "message.astra_physics.wand.released": "Construct released.",
+    "message.astra_physics.wand.too_heavy": "%s blocks is too heavy to carry; the limit is %s.",
+    "message.astra_physics.wand.not_allowed": "You are not allowed to build here.",
     "message.astra_physics.helm.released": "Helm released. Walking restored.",
+    "message.astra_physics.helm.readout":
+        "%s m/s  ·  climb %s  ·  alt %s  ·  heading %s  ·  engine %s %s%s",
     "message.astra_physics.helm.occupied": "Another pilot is already at this helm.",
 
     "message.astra_physics.interact.data_only":
@@ -119,8 +149,19 @@ ARABIC = {
     "block.astra_physics.sail": "شراع ASTRA",
     "block.astra_physics.wing": "جناح ASTRA",
     "block.astra_physics.thruster": "دافع ASTRA",
+    "block.astra_physics.reaction_wheel": "عجلة رد فعل ASTRA",
+    "block.astra_physics.balloon": "منطاد ASTRA",
+    "block.astra_physics.cambered_wing": "جناح منحني ASTRA",
+    "block.astra_physics.stabilizer": "مثبّت ASTRA",
+    "block.astra_physics.altimeter": "مقياس ارتفاع ASTRA",
+    "block.astra_physics.governor": "منظّم سرعة ASTRA",
+    "block.astra_physics.gyro": "جيروسكوب ASTRA",
 
     "message.astra_physics.prefix": "ASTRA ",
+
+    "key.categories.astra_physics": "ASTRA Physics",
+    "key.astra_physics.leave_helm": "ترك الدفة",
+    "key.astra_physics.wand_mode": "تبديل وضع العصا",
 
     "message.astra_physics.selection.point1":
         "تم تحديد النقطة الأولى عند %s. اضغط يمين على النقطة الثانية، أو تسلل + يمين للمسح.",
@@ -148,7 +189,7 @@ ARABIC = {
         "تعذّر حفظ بيانات البلوك عند %s بأمان. لم يتم تغيير أي شيء.",
     "message.astra_physics.assemble.nothing_left": "لا يوجد شيء لتجميعه.",
     "message.astra_physics.assemble.done":
-        "تم تجميع المركبة: %s بلوك، %s كيان بلوك، %s محرك، %s مروحة، %s شراع، %s جناح، %s دافع.",
+        "تم تجميع المركبة: %s بلوك، %s كيان بلوك، %s محرك، %s مروحة، %s شراع، %s جناح، %s دافع، %s عجلة رد فعل، %s منطاد.",
     "message.astra_physics.disassemble.done":
         "تم تفكيك المركبة: %s بلوك أُعيد للعالم، %s سقط كأغراض.",
 
@@ -169,8 +210,23 @@ ARABIC = {
     "message.astra_physics.drive.sail": "دفع شراعي",
     "message.astra_physics.drive.none": "بدون دفع",
     "message.astra_physics.helm.engaged":
-        "أنت على الدفة مع %s. W و S للسرعة، A و D للتوجيه، تسلل أو قفز للترك.",
+        "أنت على الدفة مع %s. W و S للسرعة، A و D لتدوير السفينة، قفز وتسلل للصعود والنزول، G للترك.",
+    "message.astra_physics.altimeter.armed": "تثبيت الارتفاع مفعّل عند %s.",
+    "message.astra_physics.altimeter.off": "تثبيت الارتفاع متوقف.",
+    "message.astra_physics.gyro.armed": "تثبيت الاتجاه مفعّل على %s.",
+    "message.astra_physics.gyro.off": "تثبيت الاتجاه متوقف.",
+    "message.astra_physics.governor.set": "حد السرعة %s%%.",
+    "message.astra_physics.wand.mode": "وضع العصا: %s.",
+    "message.astra_physics.wand.mode.assemble": "تجميع",
+    "message.astra_physics.wand.mode.disassemble": "تفكيك",
+    "message.astra_physics.wand.mode.grab": "مسك",
+    "message.astra_physics.wand.grabbed": "تحمل مركبة من %s بلوك. اضغط مرة أخرى للترك.",
+    "message.astra_physics.wand.released": "تم ترك المركبة.",
+    "message.astra_physics.wand.too_heavy": "%s بلوك ثقيلة جداً للحمل؛ الحد %s.",
+    "message.astra_physics.wand.not_allowed": "غير مسموح لك بالبناء هنا.",
     "message.astra_physics.helm.released": "تم ترك الدفة. عاد المشي طبيعياً.",
+    "message.astra_physics.helm.readout":
+        "%s م/ث  ·  صعود %s  ·  ارتفاع %s  ·  اتجاه %s  ·  محرك %s %s%s",
     "message.astra_physics.helm.occupied": "يوجد قائد آخر على هذه الدفة.",
 
     "message.astra_physics.interact.data_only":
@@ -236,6 +292,22 @@ RECIPES = {
     "thruster": (["/C/", "CIC", "CBC"],
                  {"C": "minecraft:copper_ingot", "I": "minecraft:iron_ingot",
                   "B": "minecraft:blast_furnace"}),
+    "reaction_wheel": (["III", "IRI", "III"],
+                       {"I": "minecraft:iron_ingot", "R": "minecraft:redstone_block"}),
+    "cambered_wing": (["/CC", "ICC", "/CC"],
+                      {"C": "minecraft:light_gray_wool", "I": "minecraft:copper_ingot"}),
+    "stabilizer": (["/C/", "/CI", "/C/"],
+                   {"C": "minecraft:white_wool", "I": "minecraft:iron_ingot"}),
+    "altimeter": (["/I/", "IQI", "/I/"],
+                  {"I": "minecraft:iron_ingot", "Q": "minecraft:clock"}),
+    "governor": (["/S/", "IBI", "III"],
+                 {"S": "minecraft:stick", "I": "minecraft:iron_ingot",
+                  "B": "minecraft:copper_ingot"}),
+    "gyro": (["/I/", "IEI", "/I/"],
+             {"I": "minecraft:iron_ingot", "E": "minecraft:ender_eye"}),
+    "balloon": (["WWW", "WGW", "WSW"],
+                {"W": "minecraft:white_wool", "G": "minecraft:glowstone_dust",
+                 "S": "minecraft:string"}),
 }
 
 WAND_RECIPE = (["/ND", "/SN", "S//"],
@@ -253,7 +325,24 @@ def shaped_recipe(result, pattern, keys, count=1):
     }
 
 
+# Blocks whose inventory icon is their own 3D model rather than a hand-drawn sprite. The
+# original components each have a painted item texture; these newer ones do not need one.
+MODEL_ITEM_BLOCKS = ("reaction_wheel", "balloon", "cambered_wing", "stabilizer",
+                     "altimeter", "governor", "gyro")
+
+
+def write_model_items():
+    for block in MODEL_ITEM_BLOCKS:
+        write_json(os.path.join(ASSETS, "models", "item", f"{block}.json"),
+                   {"parent": f"astra_physics:block/{block}_0"})
+        write_json(os.path.join(ASSETS, "items", f"{block}.json"),
+                   {"model": {"type": "minecraft:model",
+                              "model": f"astra_physics:item/{block}"}})
+
+
 def main():
+    write_model_items()
+    print(f"  model items: {len(MODEL_ITEM_BLOCKS)}")
     write_json(os.path.join(ASSETS, "lang", "en_us.json"), ENGLISH)
     write_json(os.path.join(ASSETS, "lang", "ar_sa.json"), ARABIC)
 
@@ -277,11 +366,15 @@ def main():
                {"replace": False, "values": [f"astra_physics:{b}" for b in PICKAXE_BLOCKS]})
     write_json(os.path.join(MINECRAFT_TAGS, "block", "mineable", "axe.json"),
                {"replace": False, "values": [f"astra_physics:{b}" for b in AXE_BLOCKS]})
+    # Fabric carries the shears tag, so cloth components break properly with shears.
+    write_json(os.path.join(ROOT, "src", "main", "resources", "data", "fabric", "tags",
+                            "block", "mineable", "shears.json"),
+               {"replace": False, "values": [f"astra_physics:{b}" for b in SHEAR_BLOCKS]})
     write_json(os.path.join(MINECRAFT_TAGS, "block", "needs_stone_tool.json"),
                {"replace": False, "values": [f"astra_physics:{b}" for b in PICKAXE_BLOCKS]})
     write_json(os.path.join(DATA, "tags", "block", "components.json"),
                {"replace": False, "values": [f"astra_physics:{b}" for b in BLOCKS]})
-    print("  tags: 4")
+    print("  tags: 5")
 
 
 if __name__ == "__main__":

@@ -38,6 +38,11 @@ public final class AstraConfig {
     public int maxSelectionScanVolume = 65_536;
     /** Maximum constructs allowed per dimension. Prevents accidental server-wide lag. */
     public int maxConstructsPerDimension = 64;
+    /** Furthest a carried construct can be held from the carrier's eyes. */
+    public double maxGrabDistance = 24.0;
+    /** Largest construct the wand can carry. Bigger hulls have to fly themselves. */
+    public int maxGrabBlocks = 512;
+
     /** Reach, in blocks, for interacting with construct-local blocks. */
     public double interactionReach = 6.0;
 
@@ -55,9 +60,17 @@ public final class AstraConfig {
      */
     public int buoyancySampleBudget = 320;
 
+    /** Upward force one fully inflated gas envelope contributes, before mass division. */
+    public double balloonLiftPerBlock = 0.40;
+    /**
+     * Altitude at which balloon lift reaches zero. Air thins with height, so an airship finds a
+     * ceiling and holds it instead of climbing out of the world.
+     */
+    public double balloonCeiling = 256.0;
+
     public double maxMarineSpeed = 0.30;
     public double maxSailSpeed = 0.17;
-    public double maxAircraftSpeed = 0.68;
+    public double maxAircraftSpeed = 0.38;
     public double maxVerticalSpeed = 0.42;
     /** Speed limit for a construct with no working propulsion. */
     public double maxDriftSpeed = 0.24;
@@ -131,11 +144,16 @@ public final class AstraConfig {
         maxSelectionScanVolume = clamp(maxSelectionScanVolume, 1, 4_194_304);
         maxConstructsPerDimension = clamp(maxConstructsPerDimension, 1, 4096);
         interactionReach = clamp(interactionReach, 1.0, 64.0);
+        maxGrabDistance = clamp(maxGrabDistance, 2.0, 128.0);
+        maxGrabBlocks = clamp(maxGrabBlocks, 1, 32_768);
 
         gravityPerTick = clamp(gravityPerTick, -4.0, 0.0);
         airDamping = clamp(airDamping, 0.50, 1.0);
         buoyancyPerBlock = clamp(buoyancyPerBlock, 0.0, 4.0);
         buoyancySampleBudget = clamp(buoyancySampleBudget, 8, 8192);
+
+        balloonLiftPerBlock = clamp(balloonLiftPerBlock, 0.0, 4.0);
+        balloonCeiling = clamp(balloonCeiling, 0.0, 4096.0);
 
         maxMarineSpeed = clamp(maxMarineSpeed, 0.01, 4.0);
         maxSailSpeed = clamp(maxSailSpeed, 0.01, 4.0);

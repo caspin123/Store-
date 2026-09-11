@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "group": "astra_physics",
+  "pattern": [
+    "/CC",
+    "ICC",
+    "/CC"
+  ],
+  "key": {
+    "C": "minecraft:light_gray_wool",
+    "I": "minecraft:copper_ingot"
+  },
+  "result": {
+    "id": "astra_physics:cambered_wing",
+    "count": 1
+  }
+}

@@ -21,6 +21,7 @@ public final class AstraNetworking {
         PayloadTypeRegistry.playC2S().register(ConstructInteractPayload.TYPE, ConstructInteractPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(ConstructControlPayload.TYPE, ConstructControlPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(PilotExitPayload.TYPE, PilotExitPayload.CODEC);
+        PayloadTypeRegistry.playC2S().register(WandModePayload.TYPE, WandModePayload.CODEC);
 
         ServerPlayNetworking.registerGlobalReceiver(ConstructPlaceBlockPayload.TYPE, (payload, context) ->
                 PhysicsConstructManager.placeBlock(context.player(), payload));
@@ -32,5 +33,7 @@ public final class AstraNetworking {
                 PhysicsConstructManager.control(context.player(), payload));
         ServerPlayNetworking.registerGlobalReceiver(PilotExitPayload.TYPE, (payload, context) ->
                 PhysicsConstructManager.releasePilot(context.player(), payload.constructId()));
+        ServerPlayNetworking.registerGlobalReceiver(WandModePayload.TYPE, (payload, context) ->
+                PhysicsConstructManager.cycleWandMode(context.player()));
     }
 }

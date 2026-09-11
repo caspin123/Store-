@@ -1,63 +1,123 @@
 {
   "variants": {
-    "facing=north,wind=0": {
-      "model": "astra_physics:block/sail_0"
+    "facing=north,wind=0,mast=0": {
+      "model": "astra_physics:block/sail_0_0"
     },
-    "facing=north,wind=1": {
-      "model": "astra_physics:block/sail_1"
+    "facing=north,wind=0,mast=1": {
+      "model": "astra_physics:block/sail_0_1"
     },
-    "facing=north,wind=2": {
-      "model": "astra_physics:block/sail_2"
+    "facing=north,wind=1,mast=0": {
+      "model": "astra_physics:block/sail_1_0"
     },
-    "facing=north,wind=3": {
-      "model": "astra_physics:block/sail_3"
+    "facing=north,wind=1,mast=1": {
+      "model": "astra_physics:block/sail_1_1"
     },
-    "facing=east,wind=0": {
-      "model": "astra_physics:block/sail_0",
+    "facing=north,wind=2,mast=0": {
+      "model": "astra_physics:block/sail_2_0"
+    },
+    "facing=north,wind=2,mast=1": {
+      "model": "astra_physics:block/sail_2_1"
+    },
+    "facing=north,wind=3,mast=0": {
+      "model": "astra_physics:block/sail_3_0"
+    },
+    "facing=north,wind=3,mast=1": {
+      "model": "astra_physics:block/sail_3_1"
+    },
+    "facing=east,wind=0,mast=0": {
+      "model": "astra_physics:block/sail_0_0",
       "y": 90
     },
-    "facing=east,wind=1": {
-      "model": "astra_physics:block/sail_1",
+    "facing=east,wind=0,mast=1": {
+      "model": "astra_physics:block/sail_0_1",
       "y": 90
     },
-    "facing=east,wind=2": {
-      "model": "astra_physics:block/sail_2",
+    "facing=east,wind=1,mast=0": {
+      "model": "astra_physics:block/sail_1_0",
       "y": 90
     },
-    "facing=east,wind=3": {
-      "model": "astra_physics:block/sail_3",
+    "facing=east,wind=1,mast=1": {
+      "model": "astra_physics:block/sail_1_1",
       "y": 90
     },
-    "facing=south,wind=0": {
-      "model": "astra_physics:block/sail_0",
+    "facing=east,wind=2,mast=0": {
+      "model": "astra_physics:block/sail_2_0",
+      "y": 90
+    },
+    "facing=east,wind=2,mast=1": {
+      "model": "astra_physics:block/sail_2_1",
+      "y": 90
+    },
+    "facing=east,wind=3,mast=0": {
+      "model": "astra_physics:block/sail_3_0",
+      "y": 90
+    },
+    "facing=east,wind=3,mast=1": {
+      "model": "astra_physics:block/sail_3_1",
+      "y": 90
+    },
+    "facing=south,wind=0,mast=0": {
+      "model": "astra_physics:block/sail_0_0",
       "y": 180
     },
-    "facing=south,wind=1": {
-      "model": "astra_physics:block/sail_1",
+    "facing=south,wind=0,mast=1": {
+      "model": "astra_physics:block/sail_0_1",
       "y": 180
     },
-    "facing=south,wind=2": {
-      "model": "astra_physics:block/sail_2",
+    "facing=south,wind=1,mast=0": {
+      "model": "astra_physics:block/sail_1_0",
       "y": 180
     },
-    "facing=south,wind=3": {
-      "model": "astra_physics:block/sail_3",
+    "facing=south,wind=1,mast=1": {
+      "model": "astra_physics:block/sail_1_1",
       "y": 180
     },
-    "facing=west,wind=0": {
-      "model": "astra_physics:block/sail_0",
+    "facing=south,wind=2,mast=0": {
+      "model": "astra_physics:block/sail_2_0",
+      "y": 180
+    },
+    "facing=south,wind=2,mast=1": {
+      "model": "astra_physics:block/sail_2_1",
+      "y": 180
+    },
+    "facing=south,wind=3,mast=0": {
+      "model": "astra_physics:block/sail_3_0",
+      "y": 180
+    },
+    "facing=south,wind=3,mast=1": {
+      "model": "astra_physics:block/sail_3_1",
+      "y": 180
+    },
+    "facing=west,wind=0,mast=0": {
+      "model": "astra_physics:block/sail_0_0",
       "y": 270
     },
-    "facing=west,wind=1": {
-      "model": "astra_physics:block/sail_1",
+    "facing=west,wind=0,mast=1": {
+      "model": "astra_physics:block/sail_0_1",
       "y": 270
     },
-    "facing=west,wind=2": {
-      "model": "astra_physics:block/sail_2",
+    "facing=west,wind=1,mast=0": {
+      "model": "astra_physics:block/sail_1_0",
       "y": 270
     },
-    "facing=west,wind=3": {
-      "model": "astra_physics:block/sail_3",
+    "facing=west,wind=1,mast=1": {
+      "model": "astra_physics:block/sail_1_1",
+      "y": 270
+    },
+    "facing=west,wind=2,mast=0": {
+      "model": "astra_physics:block/sail_2_0",
+      "y": 270
+    },
+    "facing=west,wind=2,mast=1": {
+      "model": "astra_physics:block/sail_2_1",
+      "y": 270
+    },
+    "facing=west,wind=3,mast=0": {
+      "model": "astra_physics:block/sail_3_0",
+      "y": 270
+    },
+    "facing=west,wind=3,mast=1": {
+      "model": "astra_physics:block/sail_3_1",
       "y": 270
     }
   }

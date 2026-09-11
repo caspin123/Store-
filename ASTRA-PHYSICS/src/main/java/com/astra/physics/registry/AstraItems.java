@@ -41,6 +41,13 @@ public final class AstraItems {
                 output.accept(AstraBlocks.SAIL);
                 output.accept(AstraBlocks.WING);
                 output.accept(AstraBlocks.THRUSTER);
+                output.accept(AstraBlocks.REACTION_WHEEL);
+                output.accept(AstraBlocks.BALLOON);
+                output.accept(AstraBlocks.CAMBERED_WING);
+                output.accept(AstraBlocks.STABILIZER);
+                output.accept(AstraBlocks.ALTIMETER);
+                output.accept(AstraBlocks.GOVERNOR);
+                output.accept(AstraBlocks.GYRO);
             })
             .build();
 

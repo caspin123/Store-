@@ -21,7 +21,7 @@ public final class ClientConstructManager {
     public static void transform(ConstructTransformPayload payload) {
         ClientPhysicsConstruct construct = CONSTRUCTS.get(payload.id());
         if (construct != null) {
-            construct.updateTransform(payload.x(), payload.y(), payload.z());
+            construct.updateTransform(payload.x(), payload.y(), payload.z(), payload.yaw());
         }
     }
 

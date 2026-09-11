@@ -29,6 +29,7 @@ import com.astra.physics.network.ConstructSpawnPayload;
 import com.astra.physics.network.ConstructStatePayload;
 import com.astra.physics.network.ConstructTransformPayload;
 import com.astra.physics.network.SelectionSyncPayload;
+import com.astra.physics.network.WandModePayload;
 import com.astra.physics.network.PilotStatePayload;
 import com.astra.physics.registry.AstraBlocks;
 import com.astra.physics.registry.AstraItems;
@@ -40,6 +41,8 @@ public final class AstraPhysicsClient implements ClientModInitializer {
 
     @Override
     public void onInitializeClient() {
+        AstraKeys.register();
+
         // The wand still targets real Minecraft blocks through Fabric's normal block-use callback.
         // Moving ASTRA construct blocks are NOT real Level blocks after assembly, so their use input
         // is intercepted at Minecraft.startUseItem() by MinecraftUseMixin instead. This is required
@@ -101,6 +104,12 @@ public final class AstraPhysicsClient implements ClientModInitializer {
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             ClientMovingPlatformSupport.tick(client);
             ClientHelmController.tick(client);
+
+            while (AstraKeys.consumeWandModePress()) {
+                if (client.player != null && ClientPlayNetworking.canSend(WandModePayload.TYPE)) {
+                    ClientPlayNetworking.send(WandModePayload.INSTANCE);
+                }
+            }
         });
         WorldRenderEvents.END_MAIN.register(SelectionRenderer::render);
         WorldRenderEvents.END_MAIN.register(ConstructRenderer::render);
@@ -120,11 +129,11 @@ public final class AstraPhysicsClient implements ClientModInitializer {
         }
 
         var player = client.player;
-        // The assembler wand intentionally keeps vanilla/Fabric block targeting semantics.
-        if (player.getMainHandItem().getItem() == AstraItems.PHYSICS_WAND
-                || player.getOffhandItem().getItem() == AstraItems.PHYSICS_WAND) {
-            return false;
-        }
+        // The wand used to be excluded here so it kept vanilla block targeting for selecting
+        // corners. It now also disassembles and carries constructs, so it has to be able to
+        // target them; the server decides what the click means from the wand's current mode.
+        boolean holdingWand = player.getMainHandItem().getItem() == AstraItems.PHYSICS_WAND
+                || player.getOffhandItem().getItem() == AstraItems.PHYSICS_WAND;
 
         ConstructRaycaster.Hit hit = ConstructRaycaster.raycast(player, constructReach());
         if (hit == null) return false;
@@ -137,6 +146,13 @@ public final class AstraPhysicsClient implements ClientModInitializer {
 
         InteractionHand hand = chooseUseHand(player, hit);
         boolean handled;
+        if (holdingWand) {
+            // Always an interaction: the wand never places blocks onto a hull.
+            handled = sendInteraction(hit, player.getMainHandItem().getItem() == AstraItems.PHYSICS_WAND
+                    ? InteractionHand.MAIN_HAND : InteractionHand.OFF_HAND);
+            if (handled) player.swing(hand);
+            return handled;
+        }
         // Engine always owns the click, including Sneak+Use, because sneak is how its
         // MARINE/AIRCRAFT profile is changed. Other interactive blocks keep the old
         // sneak-to-place-nearby behavior.

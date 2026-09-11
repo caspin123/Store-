@@ -13,9 +13,16 @@ fly and walk around on.
 | **Helm** | Steering position. Right-click to take the wheel. | Five wheel positions, hard to port through hard to starboard, with a marked king spoke |
 | **Engine** | Powerplant. Right-click cycles OFF / 25 / 50 / 75 / 100%. Sneak + right-click switches Marine and Aircraft. | Flywheel turns and three pistons pump, at a speed set by the power step |
 | **Propeller** | Converts engine power into thrust. Pushes opposite the face it points at. | Four blades turn; stopped without both power and throttle |
-| **Sail** | Wind propulsion, no engine needed. | Canvas bellies in a wave travelling up the sail |
-| **Wing** | Lift in Aircraft mode. Mount mirrored pairs facing outward. | Aileron deflects with the pilot's steering |
+| **Sail** | Wind propulsion, no engine needed. Tiles — place a block of them for a bigger sail. | Canvas bellies in a wave travelling across the sheet |
+| **Wing** | Lift in Aircraft mode. Mount mirrored pairs facing outward. Tiles — place several in a row for a longer wing. | Aileron deflects with the pilot's steering |
 | **Thruster** | Vertical lift, strongest in Aircraft mode. | Exhaust plume grows and pulses; cold nozzle when idle |
+| **Reaction Wheel** | Turns the hull with no airflow needed — steer at a standstill. Needs engine power. | Gyroscope rotor spins while working |
+| **Balloon** | Lighter-than-air lift. No engine needed; lift thins with altitude. | Envelope breathes |
+| **Cambered Wing** | Lifts hard at low speed, costs drag. Mix with flat wings. Tiles. | Aileron deflects with steering |
+| **Stabilizer** | Vertical fin. Damps yaw so the craft holds a heading. Needs airflow. | Trim tab deflects |
+| **Altimeter** | Right-click to hold the current height. Needs thrusters or balloons. | Armed light |
+| **Gyro** | Right-click to hold the current heading. | Rotor spins |
+| **Governor** | Caps top speed without cutting engine power. | Lever shows the setting |
 
 Components animate from the ship's real state, not a fixed loop: a parked ship's propellers are
 still, and a thruster only burns on forward throttle.
@@ -25,9 +32,12 @@ still, and a thruster only burns on forward throttle.
 1. Craft the **ASTRA Physics Wand**.
 2. Right-click one corner of your build, then the opposite corner.
 3. Right-click a third time to assemble. The blocks leave the world and become a construct.
-4. Right-click a **Helm** to take the wheel: `W`/`S` throttle, `A`/`D` steer, sneak or jump to
-   let go. You keep full control of the camera while piloting.
-5. `/astra disassemble` turns a construct back into ordinary world blocks.
+4. Right-click a **Helm** to take the wheel: `W`/`S` drive, `A`/`D` turn the ship, jump and sneak
+   climb and dive, `G` lets go (right-clicking the wheel again also works). You keep full control
+   of the camera while piloting.
+5. Press `V` to change what the wand does: **assemble**, **disassemble** (click a construct to
+   return every block to the world) or **grab** (carry a construct on the end of your gaze).
+   `/astra disassemble` still works for operators.
 
 The selection must be one connected group of blocks, and you must be allowed to build there —
 assembly deletes world blocks, so it respects spawn protection and land-claim mods.
@@ -88,9 +98,9 @@ spinning flywheel — is placed at the nearest quarter turn with the remainder a
 
 These are honest gaps, not bugs:
 
-- **No yaw rotation.** Constructs translate only. Steering is modelled as rudder thrust, because a
-  hull that turned visually would leave its collision volume behind — every other system assumes
-  local space stays axis-aligned with the world.
+- **Rotation is yaw only.** Constructs turn about the vertical axis; they do not pitch or roll.
+  Terrain contact at intermediate angles is slightly early, because a rotated block is tested as
+  the box enclosing it.
 - **Block entities keep their data but do not tick.** Chests, barrels, furnaces and hoppers work
   as storage aboard, and construct-local hoppers move items between them. Furnaces do not smelt
   and modded machines do not run until a real ShipLevel exists.

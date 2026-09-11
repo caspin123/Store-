@@ -9,8 +9,10 @@ import net.minecraft.resources.Identifier;
 
 import com.astra.physics.AstraPhysics;
 
-/** W/S throttle and A/D steering input while a player is piloting an ASTRA helm. */
-public record ConstructControlPayload(UUID constructId, float throttle, float steer)
+/**
+ * Helm input: W and S drive, A and D turn the hull, jump and sneak climb and dive.
+ */
+public record ConstructControlPayload(UUID constructId, float throttle, float steer, float lift)
         implements CustomPacketPayload {
     public static final Type<ConstructControlPayload> TYPE = new Type<>(
             Identifier.fromNamespaceAndPath(AstraPhysics.MOD_ID, "construct_control")
@@ -22,14 +24,16 @@ public record ConstructControlPayload(UUID constructId, float throttle, float st
         buf.writeUUID(constructId);
         buf.writeFloat(throttle);
         buf.writeFloat(steer);
+        buf.writeFloat(lift);
     }
 
     private static ConstructControlPayload read(RegistryFriendlyByteBuf buf) {
-        return new ConstructControlPayload(buf.readUUID(), buf.readFloat(), buf.readFloat());
+        return new ConstructControlPayload(buf.readUUID(), buf.readFloat(), buf.readFloat(), buf.readFloat());
     }
 
     public float safeThrottle() { return Math.max(-1.0F, Math.min(1.0F, throttle)); }
     public float safeSteer() { return Math.max(-1.0F, Math.min(1.0F, steer)); }
+    public float safeLift() { return Math.max(-1.0F, Math.min(1.0F, lift)); }
 
     @Override
     public Type<? extends CustomPacketPayload> type() { return TYPE; }

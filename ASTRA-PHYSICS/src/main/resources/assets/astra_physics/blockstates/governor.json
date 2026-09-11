@@ -1,0 +1,64 @@
+{
+  "variants": {
+    "facing=north,limit=0": {
+      "model": "astra_physics:block/governor_0"
+    },
+    "facing=north,limit=1": {
+      "model": "astra_physics:block/governor_1"
+    },
+    "facing=north,limit=2": {
+      "model": "astra_physics:block/governor_2"
+    },
+    "facing=north,limit=3": {
+      "model": "astra_physics:block/governor_3"
+    },
+    "facing=east,limit=0": {
+      "model": "astra_physics:block/governor_0",
+      "y": 90
+    },
+    "facing=east,limit=1": {
+      "model": "astra_physics:block/governor_1",
+      "y": 90
+    },
+    "facing=east,limit=2": {
+      "model": "astra_physics:block/governor_2",
+      "y": 90
+    },
+    "facing=east,limit=3": {
+      "model": "astra_physics:block/governor_3",
+      "y": 90
+    },
+    "facing=south,limit=0": {
+      "model": "astra_physics:block/governor_0",
+      "y": 180
+    },
+    "facing=south,limit=1": {
+      "model": "astra_physics:block/governor_1",
+      "y": 180
+    },
+    "facing=south,limit=2": {
+      "model": "astra_physics:block/governor_2",
+      "y": 180
+    },
+    "facing=south,limit=3": {
+      "model": "astra_physics:block/governor_3",
+      "y": 180
+    },
+    "facing=west,limit=0": {
+      "model": "astra_physics:block/governor_0",
+      "y": 270
+    },
+    "facing=west,limit=1": {
+      "model": "astra_physics:block/governor_1",
+      "y": 270
+    },
+    "facing=west,limit=2": {
+      "model": "astra_physics:block/governor_2",
+      "y": 270
+    },
+    "facing=west,limit=3": {
+      "model": "astra_physics:block/governor_3",
+      "y": 270
+    }
+  }
+}

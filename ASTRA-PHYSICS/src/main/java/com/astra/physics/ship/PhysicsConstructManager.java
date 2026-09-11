@@ -38,8 +38,11 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
 import com.astra.physics.AstraPhysics;
+import com.astra.physics.block.AltimeterBlock;
 import com.astra.physics.block.AstraFacingBlock;
+import com.astra.physics.block.GovernorBlock;
 import com.astra.physics.config.AstraConfig;
+import com.astra.physics.item.WandMode;
 import com.astra.physics.network.ConstructBreakBlockPayload;
 import com.astra.physics.network.ConstructControlPayload;
 import com.astra.physics.network.ConstructInteractPayload;
@@ -51,6 +54,7 @@ import com.astra.physics.network.ConstructSpawnPayload.NetBlock;
 import com.astra.physics.network.ConstructTransformPayload;
 import com.astra.physics.network.PilotStatePayload;
 import com.astra.physics.registry.AstraBlocks;
+import com.astra.physics.registry.AstraItems;
 import com.astra.physics.util.AstraText;
 
 /**
@@ -69,6 +73,8 @@ public final class PhysicsConstructManager {
     private static final Map<ResourceKey<Level>, Map<UUID, PhysicsConstruct>> BY_LEVEL = new HashMap<>();
     private static final Map<UUID, PilotSession> PILOTS = new HashMap<>();
     private static final Map<UUID, Set<UUID>> TRACKED_BY_PLAYER = new HashMap<>();
+    private static final Map<UUID, WandMode> WAND_MODES = new HashMap<>();
+    private static final Map<UUID, GrabSession> GRABS = new HashMap<>();
 
     private static final double STAND_BELOW_TOLERANCE = 0.60;
     private static final double STAND_ABOVE_TOLERANCE = 0.75;
@@ -78,6 +84,9 @@ public final class PhysicsConstructManager {
     private static final long PILOT_READOUT_INTERVAL = 5L;
 
     private PhysicsConstructManager() {}
+
+    /** A construct being carried on the end of a player's gaze. */
+    private record GrabSession(UUID constructId, double distance) {}
 
     /** Per-pilot state, including the token bucket that bounds inbound control packets. */
     private static final class PilotSession {
@@ -134,6 +143,98 @@ public final class PhysicsConstructManager {
     public static void onPlayerDisconnect(ServerPlayer player) {
         PILOTS.remove(player.getUUID());
         TRACKED_BY_PLAYER.remove(player.getUUID());
+        WAND_MODES.remove(player.getUUID());
+        // A carried construct must be let go, or it would hang in the air waiting for a carrier
+        // who is never coming back.
+        GRABS.remove(player.getUUID());
+    }
+
+    public static WandMode wandMode(ServerPlayer player) {
+        return WAND_MODES.getOrDefault(player.getUUID(), WandMode.ASSEMBLE);
+    }
+
+    /** Advances the player's wand to its next mode and tells them which it is. */
+    public static void cycleWandMode(ServerPlayer player) {
+        WandMode mode = wandMode(player).next();
+        WAND_MODES.put(player.getUUID(), mode);
+        // Changing mode lets go of anything being carried, so a mode switch can never strand a
+        // construct in mid-air.
+        GRABS.remove(player.getUUID());
+        AstraText.sendActionBar(player,
+                AstraText.info("wand.mode", AstraText.plain(mode.translationKey())));
+    }
+
+    /**
+     * Handles a wand click on a construct, which is what the disassemble and grab modes are.
+     *
+     * @return true when the wand consumed the click
+     */
+    public static boolean handleWandOnConstruct(ServerPlayer player, PhysicsConstruct construct) {
+        WandMode mode = wandMode(player);
+        ServerLevel level = player.level();
+
+        switch (mode) {
+            case DISASSEMBLE -> {
+                if (!player.mayBuild()) {
+                    AstraText.sendActionBar(player, AstraText.warning("wand.not_allowed"));
+                    return true;
+                }
+                int placed = disassemble(level, construct.id(), player);
+                if (placed < 0) {
+                    AstraText.sendActionBar(player, AstraText.warning("command.not_found"));
+                }
+                return true;
+            }
+            case GRAB -> {
+                GrabSession existing = GRABS.get(player.getUUID());
+                if (existing != null) {
+                    GRABS.remove(player.getUUID());
+                    AstraText.sendActionBar(player, AstraText.info("wand.released"));
+                    return true;
+                }
+                double distance = player.getEyePosition().distanceTo(
+                        construct.boundingBox().getCenter());
+                GRABS.put(player.getUUID(), new GrabSession(construct.id(),
+                        Math.max(3.0, Math.min(AstraConfig.get().maxGrabDistance, distance))));
+                AstraText.sendActionBar(player, AstraText.success("wand.grabbed",
+                        construct.blockCount()));
+                return true;
+            }
+            default -> {
+                return false;
+            }
+        }
+    }
+
+    /** Drives every carried construct toward where its carrier is looking. */
+    private static void tickGrabs(ServerLevel level) {
+        if (GRABS.isEmpty()) {
+            return;
+        }
+        double maxBlocks = AstraConfig.get().maxGrabBlocks;
+
+        for (ServerPlayer player : level.players()) {
+            GrabSession session = GRABS.get(player.getUUID());
+            if (session == null) {
+                continue;
+            }
+            PhysicsConstruct construct = get(level, session.constructId());
+            if (construct == null) {
+                GRABS.remove(player.getUUID());
+                continue;
+            }
+            // A hull far larger than the carrier can lift is simply too heavy to pick up.
+            if (construct.blockCount() > maxBlocks) {
+                GRABS.remove(player.getUUID());
+                AstraText.sendActionBar(player, AstraText.warning("wand.too_heavy",
+                        construct.blockCount(), (int) maxBlocks));
+                continue;
+            }
+
+            Vec3 target = player.getEyePosition()
+                    .add(player.getLookAngle().scale(session.distance()));
+            construct.setGrabTarget(target.x, target.y, target.z);
+        }
     }
 
     // -------------------------------------------------------------- assembly
@@ -502,6 +603,13 @@ public final class PhysicsConstructManager {
             return;
         }
 
+        // The wand acts on the whole construct, so it takes priority over whichever block was
+        // actually under the cursor.
+        if (player.getItemInHand(payload.hand()).getItem() == AstraItems.PHYSICS_WAND
+                && handleWandOnConstruct(player, construct)) {
+            return;
+        }
+
         if (block.state().is(AstraBlocks.ENGINE)) {
             if (player.isShiftKeyDown()) {
                 PhysicsConstruct.EngineMode mode = construct.toggleEngineMode();
@@ -518,6 +626,34 @@ public final class PhysicsConstructManager {
 
         if (block.state().is(AstraBlocks.HELM)) {
             handleHelmInteraction(player, construct, payload);
+            return;
+        }
+
+        if (block.state().is(AstraBlocks.ALTIMETER)) {
+            boolean armed = construct.toggleAltitudeHold();
+            // The armed light lives on the block, so the change has to be written back into the
+            // stored state for every client to see it.
+            construct.setLocalBlockProperty(block, AltimeterBlock.READOUT, armed ? 1 : 0);
+            AstraText.sendActionBar(player, armed
+                    ? AstraText.success("altimeter.armed", String.format(java.util.Locale.ROOT,
+                            "%.0f", construct.targetAltitude()))
+                    : AstraText.info("altimeter.off"));
+            return;
+        }
+
+        if (block.state().is(AstraBlocks.GYRO)) {
+            boolean armed = construct.toggleHeadingHold();
+            AstraText.sendActionBar(player, armed
+                    ? AstraText.success("gyro.armed", compass(construct.targetYaw()))
+                    : AstraText.info("gyro.off"));
+            return;
+        }
+
+        if (block.state().is(AstraBlocks.GOVERNOR)) {
+            int step = construct.cycleSpeedLimit();
+            construct.setLocalBlockProperty(block, GovernorBlock.LIMIT, step);
+            AstraText.sendActionBar(player, AstraText.info("governor.set",
+                    (int) Math.round(construct.speedLimitScale() * 100.0)));
             return;
         }
 
@@ -678,6 +814,8 @@ public final class PhysicsConstructManager {
             return;
         }
 
+        tickGrabs(level);
+
         for (PhysicsConstruct construct : constructs.values()) {
             construct.tick(level);
         }
@@ -814,13 +952,28 @@ public final class PhysicsConstructManager {
                 ? Component.literal(construct.enginePowerPercent() + "%")
                 : AstraText.plain("engine.off");
 
+        // Autopilot state belongs on the instruments line: a pilot has to be able to see that
+        // something else is flying the craft, or they will fight it without knowing why.
+        StringBuilder auto = new StringBuilder();
+        if (construct.altitudeHold() && construct.altimeterCount() > 0) {
+            auto.append(String.format(java.util.Locale.ROOT, " ALT %.0f", construct.targetAltitude()));
+        }
+        if (construct.headingHold() && construct.gyroCount() > 0) {
+            auto.append(" HDG ").append(compass(construct.targetYaw()));
+        }
+        if (construct.speedLimitStep() != GovernorBlock.UNRESTRICTED) {
+            auto.append(String.format(java.util.Locale.ROOT, " LIM %.0f%%",
+                    construct.speedLimitScale() * 100.0));
+        }
+
         AstraText.sendActionBar(player, AstraText.info("helm.readout",
                 String.format(java.util.Locale.ROOT, "%.1f", speed * 20.0),
                 String.format(java.util.Locale.ROOT, "%+.1f", climb * 20.0),
                 String.format(java.util.Locale.ROOT, "%.0f", construct.y()),
                 compass(construct.yaw()),
                 power,
-                modeLabel(construct.engineMode())));
+                modeLabel(construct.engineMode()),
+                auto.toString()));
     }
 
     /** Eight-point compass name for a heading, so a pilot can hold a course. */
@@ -1081,6 +1234,7 @@ public final class PhysicsConstructManager {
         for (UUID playerId : releasedPilots) {
             PILOTS.remove(playerId);
         }
+        GRABS.values().removeIf(session -> session.constructId().equals(id));
 
         ConstructRemovePayload payload = new ConstructRemovePayload(id);
         for (ServerPlayer target : level.players()) {

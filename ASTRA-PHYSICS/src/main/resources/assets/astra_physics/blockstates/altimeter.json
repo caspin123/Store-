@@ -1,0 +1,34 @@
+{
+  "variants": {
+    "facing=north,readout=0": {
+      "model": "astra_physics:block/altimeter_0"
+    },
+    "facing=north,readout=1": {
+      "model": "astra_physics:block/altimeter_1"
+    },
+    "facing=east,readout=0": {
+      "model": "astra_physics:block/altimeter_0",
+      "y": 90
+    },
+    "facing=east,readout=1": {
+      "model": "astra_physics:block/altimeter_1",
+      "y": 90
+    },
+    "facing=south,readout=0": {
+      "model": "astra_physics:block/altimeter_0",
+      "y": 180
+    },
+    "facing=south,readout=1": {
+      "model": "astra_physics:block/altimeter_1",
+      "y": 180
+    },
+    "facing=west,readout=0": {
+      "model": "astra_physics:block/altimeter_0",
+      "y": 270
+    },
+    "facing=west,readout=1": {
+      "model": "astra_physics:block/altimeter_1",
+      "y": 270
+    }
+  }
+}

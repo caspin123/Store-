@@ -5,6 +5,11 @@
     "astra_physics:propeller",
     "astra_physics:wing",
     "astra_physics:thruster",
-    "astra_physics:reaction_wheel"
+    "astra_physics:reaction_wheel",
+    "astra_physics:cambered_wing",
+    "astra_physics:stabilizer",
+    "astra_physics:altimeter",
+    "astra_physics:governor",
+    "astra_physics:gyro"
   ]
 }

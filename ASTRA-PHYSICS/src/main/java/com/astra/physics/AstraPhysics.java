@@ -16,6 +16,7 @@ import net.minecraft.world.InteractionResult;
 
 import com.astra.physics.command.AstraCommands;
 import com.astra.physics.config.AstraConfig;
+import com.astra.physics.item.WandMode;
 import com.astra.physics.network.AstraNetworking;
 import com.astra.physics.registry.AstraBlocks;
 import com.astra.physics.registry.AstraItems;
@@ -60,6 +61,13 @@ public final class AstraPhysics implements ModInitializer {
             }
             if (player.getItemInHand(hand).getItem() != AstraItems.PHYSICS_WAND) {
                 return InteractionResult.PASS;
+            }
+
+            // Corner picking belongs to assemble mode. In the other modes the wand acts on a
+            // construct, and a stray click on terrain should do nothing rather than quietly
+            // start a selection the player did not ask for.
+            if (PhysicsConstructManager.wandMode(serverPlayer) != WandMode.ASSEMBLE) {
+                return InteractionResult.SUCCESS;
             }
 
             if (player.isSecondaryUseActive()) {

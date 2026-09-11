@@ -19,6 +19,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 
 import com.astra.physics.block.AstraFacingBlock;
+import com.astra.physics.block.GovernorBlock;
 import com.astra.physics.config.AstraConfig;
 import com.astra.physics.network.ConstructStatePayload;
 import com.astra.physics.registry.AstraBlocks;
@@ -86,6 +87,15 @@ public final class PhysicsConstruct {
 
     private int helmCount, engineCount, propellerCount, sailCount, wingCount, thrusterCount;
     private int reactionWheelCount, balloonCount;
+    private int camberedWingCount, stabilizerCount, altimeterCount, gyroCount;
+    /** Lowest governor setting aboard, 3 meaning unrestricted. The strictest one wins. */
+    private int speedLimitStep = GovernorBlock.UNRESTRICTED;
+
+    // ---- autopilot
+    private boolean altitudeHold;
+    private double targetAltitude;
+    private boolean headingHold;
+    private double targetYaw;
     private double propellerThrustX, propellerThrustZ;
     private double helmForwardX, helmForwardZ;
     private double wingBalanceFactor;
@@ -130,6 +140,11 @@ public final class PhysicsConstruct {
     private boolean stateDirty = true;
 
     private final BlockPos.MutableBlockPos scratchPos = new BlockPos.MutableBlockPos();
+
+    // Where a player carrying this construct wants it. Cleared every tick and re-set while the
+    // grab is held, so letting go needs no extra bookkeeping: the construct simply falls again.
+    private boolean grabbed;
+    private double grabTargetX, grabTargetY, grabTargetZ;
 
     public PhysicsConstruct(UUID id, List<StoredBlock> blocks, double x, double y, double z) {
         this.id = id;
@@ -261,6 +276,45 @@ public final class PhysicsConstruct {
     public int thrusterCount() { return thrusterCount; }
     public int reactionWheelCount() { return reactionWheelCount; }
     public int balloonCount() { return balloonCount; }
+    public int camberedWingCount() { return camberedWingCount; }
+    public int stabilizerCount() { return stabilizerCount; }
+    public int altimeterCount() { return altimeterCount; }
+    public int gyroCount() { return gyroCount; }
+    public boolean altitudeHold() { return altitudeHold; }
+    public double targetAltitude() { return targetAltitude; }
+    public boolean headingHold() { return headingHold; }
+    public double targetYaw() { return targetYaw; }
+
+    /**
+     * Arms or disarms altitude hold at the height the construct is at now.
+     *
+     * @return true if hold is now armed
+     */
+    public boolean toggleAltitudeHold() {
+        altitudeHold = !altitudeHold;
+        targetAltitude = y;
+        return altitudeHold;
+    }
+
+    /** Arms or disarms heading hold on the heading the construct is on now. */
+    public boolean toggleHeadingHold() {
+        headingHold = !headingHold;
+        targetYaw = yaw;
+        return headingHold;
+    }
+
+    /** Cycles the speed cap. Returns the new step, 3 meaning unrestricted. */
+    public int cycleSpeedLimit() {
+        speedLimitStep = (speedLimitStep + 1) % 4;
+        return speedLimitStep;
+    }
+
+    public int speedLimitStep() { return speedLimitStep; }
+
+    /** The cap as a fraction of normal top speed. */
+    public double speedLimitScale() {
+        return (speedLimitStep + 1) / 4.0;
+    }
     /**
      * True only when the construct has an engine block AND its power is turned up.
      *
@@ -341,6 +395,50 @@ public final class PhysicsConstruct {
      * used for range checks and tracking, so it has to enclose the hull at every angle rather
      * than only when the ship happens to be square to the world.
      */
+    /** Asks the construct to move toward a point this tick, as if carried. */
+    public void setGrabTarget(double targetX, double targetY, double targetZ) {
+        grabbed = true;
+        grabTargetX = targetX;
+        grabTargetY = targetY;
+        grabTargetZ = targetZ;
+    }
+
+    public boolean isGrabbed() { return grabbed; }
+
+    /**
+     * Steers a carried construct toward where its carrier is pointing.
+     *
+     * <p>It is driven by velocity rather than teleported, so terrain collision, riders and every
+     * other part of the tick still apply — a grabbed hull bumps into a cliff instead of passing
+     * through it.
+     */
+    private void applyGrab() {
+        double toX = grabTargetX - (x + pivotX);
+        double toY = grabTargetY - y;
+        double toZ = grabTargetZ - (z + pivotZ);
+
+        // Heavier hulls answer more slowly, so a large ship feels like it is being dragged.
+        double response = Math.max(0.06, 0.34 - Math.min(0.24, mass / 2400.0));
+        vx += toX * response;
+        vy += toY * response;
+        vz += toZ * response;
+
+        // Strong damping, or the hull overshoots and oscillates around the carry point.
+        vx *= 0.62;
+        vy *= 0.62;
+        vz *= 0.62;
+    }
+
+    /** Restores autopilot settings during world load. */
+    public void restoreAutopilot(boolean altitudeHold, double targetAltitude,
+                                 boolean headingHold, double targetYaw, int speedLimitStep) {
+        this.altitudeHold = altitudeHold;
+        this.targetAltitude = targetAltitude;
+        this.headingHold = headingHold;
+        this.targetYaw = wrapDegrees(targetYaw);
+        this.speedLimitStep = Math.max(0, Math.min(GovernorBlock.UNRESTRICTED, speedLimitStep));
+    }
+
     public AABB aabbAt(double px, double py, double pz) {
         double halfX = (maxLocalX - minLocalX + 1.0) * 0.5;
         double halfZ = (maxLocalZ - minLocalZ + 1.0) * 0.5;
@@ -383,6 +481,27 @@ public final class PhysicsConstruct {
             return false;
         }
         blocks.add(new StoredBlock(localX, localY, localZ, state, blockEntityData));
+        rebuildDerivedData();
+        return true;
+    }
+
+    /**
+     * Rewrites one property on a stored block, in place.
+     *
+     * <p>Some components show a setting on their own model — an armed light, a dial position — and
+     * the client only ever sees stored block states, so a setting has to be written back here to
+     * be visible. Marking the structure dirty resends the snapshot; these settings change when a
+     * player clicks, not every tick, so that is cheap.
+     */
+    public <T extends Comparable<T>> boolean setLocalBlockProperty(
+            StoredBlock block, net.minecraft.world.level.block.state.properties.Property<T> property,
+            T value) {
+        int index = blocks.indexOf(block);
+        if (index < 0 || !block.state().hasProperty(property)) {
+            return false;
+        }
+        blocks.set(index, new StoredBlock(block.localX(), block.localY(), block.localZ(),
+                block.state().setValue(property, value), block.blockEntityData()));
         rebuildDerivedData();
         return true;
     }
@@ -520,7 +639,10 @@ public final class PhysicsConstruct {
         AstraConfig config = AstraConfig.get();
         updateControlDecay();
 
-        vy += config.gravityPerTick;
+        // A carried construct hangs off its carrier rather than falling.
+        if (!grabbed) {
+            vy += config.gravityPerTick;
+        }
 
         tickLocalHoppers(level, config);
 
@@ -534,6 +656,7 @@ public final class PhysicsConstruct {
 
         applyBuoyancyAndWaves(level, config, submergedFraction);
         applyComponents(level, config, submergedFraction);
+        applyAltitudeHold(config);
 
         // Water is damped anisotropically on purpose: vertical oscillation is suppressed much
         // harder than forward motion, which removes tick-to-tick bobbing without making the
@@ -551,6 +674,10 @@ public final class PhysicsConstruct {
 
         clampVelocity(config, submergedFraction);
 
+        if (grabbed) {
+            applyGrab();
+        }
+
         applyYaw(level);
 
         moveAxis(level, vx, 0.0, 0.0);
@@ -559,6 +686,10 @@ public final class PhysicsConstruct {
 
         emitComponentEffects(level, config, submergedFraction);
         refreshNetworkState();
+
+        // The carrier re-asserts this every tick it holds on, so clearing it here is what makes
+        // releasing automatic.
+        grabbed = false;
     }
 
     private void updateControlDecay() {
@@ -591,6 +722,7 @@ public final class PhysicsConstruct {
         maxLocalX = maxLocalY = maxLocalZ = Integer.MIN_VALUE;
         helmCount = engineCount = propellerCount = sailCount = wingCount = thrusterCount = 0;
         reactionWheelCount = balloonCount = 0;
+        camberedWingCount = stabilizerCount = altimeterCount = gyroCount = 0;
         propellerThrustX = propellerThrustZ = 0.0;
         helmForwardX = 0.0;
         helmForwardZ = 1.0;
@@ -645,6 +777,18 @@ public final class PhysicsConstruct {
                 isComponent = true;
             } else if (state.is(AstraBlocks.BALLOON)) {
                 balloonCount++;
+                isComponent = true;
+            } else if (state.is(AstraBlocks.CAMBERED_WING)) {
+                camberedWingCount++;
+                isComponent = true;
+            } else if (state.is(AstraBlocks.STABILIZER)) {
+                stabilizerCount++;
+                isComponent = true;
+            } else if (state.is(AstraBlocks.ALTIMETER)) {
+                altimeterCount++;
+                isComponent = true;
+            } else if (state.is(AstraBlocks.GYRO)) {
+                gyroCount++;
                 isComponent = true;
             }
 
@@ -1020,15 +1164,25 @@ public final class PhysicsConstruct {
             applyBalloonLift(level, config, submerged);
         }
 
-        if (wingCount > 0) {
+        if (wingCount > 0 || camberedWingCount > 0) {
             double horizontalSpeedSq = vx * vx + vz * vz;
-            double wingRatio = wingCount / Math.max(1.0, mass);
+            // A cambered wing is curved, so it lifts well below the speed a flat one needs.
+            double liftingArea = wingCount + camberedWingCount * 1.9;
+            double wingRatio = liftingArea / Math.max(1.0, mass);
             double airFactor = Math.max(0.0, 1.0 - submerged);
             double modeFactor = engineMode == EngineMode.AIRCRAFT ? 1.0 : 0.35;
             // Tuned so a reasonably light aircraft with a mirrored wing pair can actually fly once
             // it reaches take-off speed. Marine mode intentionally gets far less lift.
             double lift = horizontalSpeedSq * wingRatio * 4.25 * airFactor * wingBalanceFactor * modeFactor;
             vy += Math.min(0.14, lift);
+
+            // Camber is bought with drag. Without this a craft made entirely of cambered wings
+            // would climb better and cruise no slower, which would make flat wings pointless.
+            if (camberedWingCount > 0) {
+                double camberDrag = Math.min(0.06, camberedWingCount / Math.max(1.0, mass) * 0.22);
+                vx *= 1.0 - camberDrag;
+                vz *= 1.0 - camberDrag;
+            }
         }
     }
 
@@ -1077,6 +1231,10 @@ public final class PhysicsConstruct {
                 && engineMode == EngineMode.MARINE) {
             limit = Math.min(config.maxMarineSpeed + 0.08, limit + 0.035);
         }
+
+        // A governor trims top speed without touching engine power, so a craft can creep along
+        // with full manoeuvring authority still available.
+        limit *= speedLimitScale();
 
         double horizontalSq = vx * vx + vz * vz;
         if (horizontalSq > limit * limit) {
@@ -1207,6 +1365,51 @@ public final class PhysicsConstruct {
     }
 
     /**
+     * Steers back toward the held heading whenever the pilot is not steering themselves.
+     *
+     * <p>It stands aside the moment the wheel is touched: an autopilot that fought the pilot would
+     * be worse than none at all.
+     */
+    private void applyHeadingHold() {
+        if (!headingHold || gyroCount <= 0) {
+            return;
+        }
+        if (controlTicksRemaining > 0 && Math.abs(helmSteer) > 0.01F) {
+            return;
+        }
+
+        double error = wrapDegrees(targetYaw - yaw);
+        double authority = Math.min(1.0, gyroCount * 0.5);
+        yawVelocity += Math.max(-0.6, Math.min(0.6, error * 0.045)) * authority;
+    }
+
+    /**
+     * Holds a set altitude.
+     *
+     * <p>This needs something that can actually push vertically, so a hull with no thrusters and
+     * no gas envelopes cannot hold height no matter how many altimeters it carries. As with the
+     * gyro, a pilot asking to climb or dive takes priority.
+     */
+    private void applyAltitudeHold(AstraConfig config) {
+        if (!altitudeHold || altimeterCount <= 0) {
+            return;
+        }
+        if (controlTicksRemaining > 0 && Math.abs(helmLift) > 0.01F) {
+            return;
+        }
+        boolean canPush = (thrusterCount > 0 && enginesEnabled()) || balloonCount > 0;
+        if (!canPush) {
+            return;
+        }
+
+        double error = targetAltitude - y;
+        // Damped by the current climb rate, or the hull would porpoise through the target the
+        // same way the hull used to bob in water.
+        double correction = error * 0.012 - vy * 0.22;
+        vy += Math.max(-0.05, Math.min(0.05, correction));
+    }
+
+    /**
      * Integrates yaw, refusing a turn that would sweep the hull through terrain.
      *
      * <p>Reverting the whole step rather than turning partway keeps orientation and collision in
@@ -1216,6 +1419,16 @@ public final class PhysicsConstruct {
     private void applyYaw(ServerLevel level) {
         // A hull turns against water or air resistance, so an untouched wheel settles quickly.
         yawVelocity *= 0.86;
+
+        // A vertical fin needs airflow to bite, so it damps a swinging tail in proportion to how
+        // fast the hull is travelling. This is what stops a craft wandering off heading.
+        if (stabilizerCount > 0) {
+            double speed = Math.sqrt(vx * vx + vz * vz);
+            double bite = Math.min(0.55, stabilizerCount * 0.16) * Math.min(1.0, speed / 0.22);
+            yawVelocity *= 1.0 - bite;
+        }
+
+        applyHeadingHold();
         if (Math.abs(yawVelocity) < 0.01) {
             yawVelocity = 0.0;
             return;

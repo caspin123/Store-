@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "group": "astra_physics",
+  "pattern": [
+    "/S/",
+    "IBI",
+    "III"
+  ],
+  "key": {
+    "S": "minecraft:stick",
+    "I": "minecraft:iron_ingot",
+    "B": "minecraft:copper_ingot"
+  },
+  "result": {
+    "id": "astra_physics:governor",
+    "count": 1
+  }
+}

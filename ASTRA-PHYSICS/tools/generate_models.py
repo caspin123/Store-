@@ -225,7 +225,7 @@ AILERON_HINGE = (12.0, 7.8, 8.0)
 WING_SINGLE, WING_ROOT, WING_MIDDLE, WING_TIP = range(4)
 
 
-def wing_frame(angle, part):
+def wing_frame(angle, part, cambered=False):
     """One span of airfoil that tiles into a wing of any length.
 
     The old wing was a whole fixed wing crammed into one block, which is why it looked stubby:
@@ -235,16 +235,19 @@ def wing_frame(angle, part):
     """
     has_root = part in (WING_SINGLE, WING_ROOT)
     has_tip = part in (WING_SINGLE, WING_TIP)
+    # A cambered section is visibly curved: its trailing edge drops and its nose lifts, which is
+    # the shape that gives it lift at a speed a flat wing would still be sinking at.
+    camber = 0.9 if cambered else 0.0
 
     # The section spans its own cell exactly, so consecutive blocks meet with no gap.
     z0, z1 = (2.0 if has_tip else 0.0), 16.0
 
     elements = [
         # leading edge, rounded with two steps
-        box((1.0, 6.9, z0), (2.6, 8.9, z1), "wood"),
-        box((2.6, 6.6, z0), (4.2, 9.2, z1), "metal"),
+        box((1.0, 6.9 + camber, z0), (2.6, 8.9 + camber, z1), "wood"),
+        box((2.6, 6.6 + camber * 0.6, z0), (4.2, 9.2 + camber * 0.6, z1), "metal"),
         # main airfoil body
-        box((4.2, 6.8, z0), (12.0, 9.0, z1), "cloth"),
+        box((4.2, 6.8, z0), (12.0, 9.0 + camber * 0.4, z1), "cloth"),
         # spar running the length of the wing
         box((6.5, 6.5, z0), (8.5, 9.3, z1), "wood"),
         # rib at the near end, so a long wing shows regular ribs
@@ -253,8 +256,9 @@ def wing_frame(angle, part):
 
     # trailing-edge aileron, hinged along the span
     hinge = rotation(AILERON_HINGE, "z", angle) if angle else None
-    elements.append(box((12.0, 7.0, z0), (15.4, 8.8, z1), "wood", rotation=hinge))
-    elements.append(box((12.4, 7.2, z0 + 0.3), (15.2, 8.6, z1 - 0.3), "cloth", rotation=hinge))
+    elements.append(box((12.0, 7.0 - camber, z0), (15.4, 8.8 - camber, z1), "wood", rotation=hinge))
+    elements.append(box((12.4, 7.2 - camber, z0 + 0.3), (15.2, 8.6 - camber, z1 - 0.3), "cloth",
+                        rotation=hinge))
 
     if has_root:
         # mount that ties the wing into the hull
@@ -405,6 +409,104 @@ def balloon_frame(frame):
     return model(elements)
 
 
+
+# ----------------------------------------------------------- instruments
+
+ALTIMETER_STATES = 2   # idle, armed
+GOVERNOR_STEPS = 4     # 25, 50, 75, unrestricted
+GYRO_FRAMES = 4
+STABILIZER_ANGLES = (-22.5, 0.0, 22.5)
+GYRO_CENTER = (8.0, 8.5, 8.0)
+
+
+def altimeter_frame(armed):
+    """A dial that lights when it is holding a height."""
+    elements = [
+        box((2, 0, 2), (14, 2, 14), "dark"),
+        box((3, 2, 3), (13, 11, 5), "metal"),
+        box((2.5, 2.5, 2.4), (13.5, 10.5, 3.0), "brass"),
+        # face
+        box((3.5, 3.2, 1.9), (12.5, 9.8, 2.5), "black"),
+        # needle, parked low when idle and up at the mark when armed
+        box((7.4, 4.0, 1.5), (8.6, 7.2 if armed else 5.6, 2.0), "brass"),
+        # mount
+        box((5, 11, 5), (11, 13, 11), "dark"),
+        box((6.5, 13, 6.5), (9.5, 14, 9.5), "brass"),
+    ]
+    if armed:
+        elements.append(box((11.2, 8.4, 1.6), (12.4, 9.6, 2.1), "cyan", shade=False))
+    return model(elements)
+
+
+def governor_frame(step):
+    """A lever whose position is the speed cap, so the setting is readable across the deck."""
+    # Lever lies flat at the lowest setting and stands upright at unrestricted.
+    angle = (-45.0, -22.5, 0.0, 22.5)[step]
+    elements = [
+        box((2, 0, 2), (14, 3, 14), "dark"),
+        box((3, 3, 3), (13, 5, 13), "metal"),
+        # quadrant plate
+        box((6.5, 5, 3.5), (9.5, 13, 5.0), "brass"),
+        # notches, one per setting
+        box((5.5, 5.5, 3.2), (10.5, 6.2, 3.6), "black"),
+        box((5.5, 7.5, 3.2), (10.5, 8.2, 3.6), "black"),
+        box((5.5, 9.5, 3.2), (10.5, 10.2, 3.6), "black"),
+        box((5.5, 11.5, 3.2), (10.5, 12.2, 3.6), "black"),
+    ]
+    lever = rotation((8.0, 6.0, 6.0), "z", angle) if angle else None
+    elements.append(box((7.2, 5.5, 5.4), (8.8, 14.0, 6.8), "wood", rotation=lever))
+    elements.append(box((6.6, 13.4, 4.8), (9.4, 15.4, 7.4), "brass", rotation=lever))
+    # a lit pip that climbs with the setting
+    elements.append(box((10.6, 5.2 + step * 2.0, 3.2), (11.8, 6.4 + step * 2.0, 3.7),
+                        "cyan", shade=False))
+    return model(elements)
+
+
+def gyro_frame(frame):
+    """Nested gimbal rings with a spinning rotor, the classic instrument shape."""
+    angle = frame * 22.5
+    elements = [
+        box((3, 0, 3), (13, 2, 13), "dark"),
+        box((6.5, 2, 6.5), (9.5, 4, 9.5), "brass"),
+        box((1.5, 3.5, 7.2), (14.5, 13.5, 8.8), "metal"),
+    ]
+    # fixed outer ring, in the vertical plane
+    for index in range(8):
+        elements.append(ring_part(GYRO_CENTER, 5.8, index * 45.0, (4.8, 1.0), 1.4, "brass"))
+    # rotor, spinning in the horizontal plane
+    for index in range(8):
+        elements.append(ring_part(GYRO_CENTER, 4.0, angle + index * 45.0, (3.4, 1.2), 1.8,
+                                  "metal", axis="y"))
+    for index in range(2):
+        elements.append(spoke(GYRO_CENTER, 7.4, 0.9, angle + index * 90.0, 1.0, "metal", axis="y"))
+    elements.append(box((7.0, 7.5, 7.0), (9.0, 9.5, 9.0), "dark"))
+    elements.append(ring_part(GYRO_CENTER, 2.6, angle, (1.6, 1.6), 2.0, "cyan",
+                              axis="y", shade=False))
+    return model(elements)
+
+
+def stabilizer_frame(angle):
+    """A tail fin with a trim tab that deflects as the hull swings."""
+    elements = [
+        # root fairing
+        box((5, 0, 4), (11, 3, 14), "dark"),
+        box((6, 3, 5), (10, 5, 13), "metal"),
+        # fin, tapering as it rises
+        box((7.0, 5, 4.5), (9.0, 11, 13.0), "cloth"),
+        box((7.2, 11, 6.0), (8.8, 15, 12.0), "cloth"),
+        # leading edge and cap
+        box((6.7, 5, 3.6), (9.3, 11, 5.2), "wood"),
+        box((6.9, 11, 5.2), (9.1, 15, 6.6), "wood"),
+        box((6.6, 15, 6.0), (9.4, 16, 12.2), "brass"),
+        # rib
+        box((6.6, 8.2, 5.0), (9.4, 9.2, 13.0), "brass"),
+    ]
+    hinge = rotation((8.0, 8.0, 13.0), "x", angle) if angle else None
+    elements.append(box((7.1, 5, 13.0), (8.9, 14, 15.4), "wood", rotation=hinge))
+    elements.append(box((7.3, 5.4, 13.2), (8.7, 13.6, 15.2), "cloth", rotation=hinge))
+    return model(elements)
+
+
 # ------------------------------------------------------------------- output
 
 def validate(name, payload):
@@ -490,6 +592,33 @@ def main():
                        wing_frame(angle, part))
     write_blockstate("wing", "aileron", len(WING_ANGLES), "part", 4)
     generated.append(("wing", len(WING_ANGLES) * 4))
+
+    for index, angle in enumerate(WING_ANGLES):
+        for part in range(4):
+            write_json(os.path.join(MODELS, f"cambered_wing_{index}_{part}.json"),
+                       wing_frame(angle, part, cambered=True))
+    write_blockstate("cambered_wing", "aileron", len(WING_ANGLES), "part", 4)
+    generated.append(("cambered_wing", len(WING_ANGLES) * 4))
+
+    for index, angle in enumerate(STABILIZER_ANGLES):
+        write_json(os.path.join(MODELS, f"stabilizer_{index}.json"), stabilizer_frame(angle))
+    write_blockstate("stabilizer", "trim", len(STABILIZER_ANGLES))
+    generated.append(("stabilizer", len(STABILIZER_ANGLES)))
+
+    for armed in range(ALTIMETER_STATES):
+        write_json(os.path.join(MODELS, f"altimeter_{armed}.json"), altimeter_frame(armed == 1))
+    write_blockstate("altimeter", "readout", ALTIMETER_STATES)
+    generated.append(("altimeter", ALTIMETER_STATES))
+
+    for step in range(GOVERNOR_STEPS):
+        write_json(os.path.join(MODELS, f"governor_{step}.json"), governor_frame(step))
+    write_blockstate("governor", "limit", GOVERNOR_STEPS)
+    generated.append(("governor", GOVERNOR_STEPS))
+
+    for frame in range(GYRO_FRAMES):
+        write_json(os.path.join(MODELS, f"gyro_{frame}.json"), gyro_frame(frame))
+    write_blockstate("gyro", "spin", GYRO_FRAMES, facings=False)
+    generated.append(("gyro", GYRO_FRAMES))
 
     for frame in range(REACTION_WHEEL_FRAMES):
         write_json(os.path.join(MODELS, f"reaction_wheel_{frame}.json"),

@@ -15,7 +15,10 @@ Clockwork is an addon for Valkyrien Skies and Create. It is not a physics engine
 physics live in Valkyrien Skies and the kinetics in Create, so none of its code could have been
 reused here even had that been the intent — it calls APIs this mod does not have.
 
-Two of its design ideas were reimplemented from scratch for ASTRA's own solver:
+Several of its design ideas were reimplemented from scratch for ASTRA's own solver. Where an idea
+depended on redstone — Clockwork's altimeter, resistor and flap bearings all do — the mechanism
+could not be carried over at all, because construct blocks are not world blocks and never tick.
+The intent was kept and the wiring replaced with direct action on the solver:
 
 - **Reaction wheel.** A powered gyroscope that turns a hull without pushing against the medium
   around it, so a craft can steer at a standstill. ASTRA's version applies yaw authority directly
@@ -23,6 +26,14 @@ Two of its design ideas were reimplemented from scratch for ASTRA's own solver:
 - **Gas envelope.** Lighter-than-air lift, which lets a craft take off and hover without needing
   speed and wings. ASTRA's version extends the mod's existing buoyancy model into air, with lift
   thinning at altitude to give an airship a natural ceiling.
+- **Altimeter, governor and gyro.** Altitude hold, a speed cap and heading hold. Clockwork's
+  versions emit and consume redstone; ASTRA's act on the solver and stand aside whenever the pilot
+  takes over.
+- **Cambered wing.** A wing with a built-in angle of attack, lifting harder and dragging more.
+- **Vertical stabilizer.** A fin that damps yaw so a craft holds a heading, taken from Clockwork's
+  own advice on building stable aircraft.
+- **Gravitron.** A tool with assemble, disassemble and carry modes, which in ASTRA became the
+  physics wand's mode switch.
 
 ### Assets
 

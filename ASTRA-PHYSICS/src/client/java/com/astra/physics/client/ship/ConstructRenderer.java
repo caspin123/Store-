@@ -150,6 +150,10 @@ public final class ConstructRenderer {
         int frame;
 
         switch (component.drive()) {
+            case MANUAL -> {
+                // The stored state already carries the setting the player chose.
+                return state;
+            }
             case STEER -> {
                 // -1..1 maps onto the full frame range, with the middle frame as neutral.
                 float normalised = (steer + 1.0F) * 0.5F;

@@ -1,5 +1,51 @@
 # Changelog
 
+## 0.4.0-alpha
+
+Five new components and a rebuilt wand, reimplemented from ideas in
+[Clockwork](https://github.com/ValkyrienSkies/Clockwork) (Apache-2.0). See `CREDITS.md`.
+
+### Redstone does not exist on a construct
+
+Several of Clockwork's best ideas are redstone devices: an altimeter that emits a signal near a
+target height, a resistor that trims shaft speed by signal strength, flap bearings that tilt to an
+analogue level. None of that can work here, because construct blocks are not world blocks — they
+never tick and there is no redstone on a moving hull to emit into or read from.
+
+So the useful half of each idea was kept and the wiring dropped. They act on the solver directly:
+
+- **Altimeter** — right-click to hold the height you are at. Needs thrusters or gas envelopes to
+  push against, and stands aside the moment the pilot asks to climb or dive.
+- **Gyro** — right-click to hold the heading you are on. Stands aside the moment the wheel moves.
+- **Governor** — caps top speed without touching engine power, so a craft can dock or creep
+  through terrain with full manoeuvring authority still available.
+
+### Flight surfaces
+
+- **Cambered wing** — curved, so it lifts hard at a speed a flat wing is still sinking at, which
+  is what gets a heavy hull airborne. Paid for in drag, so a craft built entirely from them climbs
+  well and then refuses to go anywhere. Mixing the two is the point.
+- **Stabilizer** — a vertical fin that drags the tail back in line whenever the nose swings.
+  Clockwork's own plane tips call a vertical stabiliser the biggest stability win available, and
+  it is what stops a craft wandering off heading between corrections. It works off airflow, so it
+  does nothing at a standstill; that is what a reaction wheel is for.
+
+### The wand does more than assemble
+
+Modelled on Clockwork's Gravitron. Press `V` to cycle modes:
+
+- **Assemble** — as before.
+- **Disassemble** — click a construct and every block returns to the world. This closes a real
+  gap: disassembly existed only as an operator command, so a survival player could turn a build
+  into a construct and then never turn it back.
+- **Grab** — click a construct to carry it on the end of your gaze, click again to let go. It is
+  driven by velocity rather than teleported, so terrain collision and riders still apply: a
+  carried hull bumps into a cliff instead of passing through it. Heavier hulls answer more slowly,
+  and anything past the configured limit is too heavy to lift at all.
+
+Autopilot settings are saved with the construct, and the pilot's instrument line shows which of
+them are engaged — an autopilot the pilot cannot see is one they will fight without knowing why.
+
 ## 0.3.1-alpha
 
 ### Components are readable now

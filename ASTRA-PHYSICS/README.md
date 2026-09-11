@@ -18,6 +18,11 @@ fly and walk around on.
 | **Thruster** | Vertical lift, strongest in Aircraft mode. | Exhaust plume grows and pulses; cold nozzle when idle |
 | **Reaction Wheel** | Turns the hull with no airflow needed — steer at a standstill. Needs engine power. | Gyroscope rotor spins while working |
 | **Balloon** | Lighter-than-air lift. No engine needed; lift thins with altitude. | Envelope breathes |
+| **Cambered Wing** | Lifts hard at low speed, costs drag. Mix with flat wings. Tiles. | Aileron deflects with steering |
+| **Stabilizer** | Vertical fin. Damps yaw so the craft holds a heading. Needs airflow. | Trim tab deflects |
+| **Altimeter** | Right-click to hold the current height. Needs thrusters or balloons. | Armed light |
+| **Gyro** | Right-click to hold the current heading. | Rotor spins |
+| **Governor** | Caps top speed without cutting engine power. | Lever shows the setting |
 
 Components animate from the ship's real state, not a fixed loop: a parked ship's propellers are
 still, and a thruster only burns on forward throttle.
@@ -30,7 +35,9 @@ still, and a thruster only burns on forward throttle.
 4. Right-click a **Helm** to take the wheel: `W`/`S` drive, `A`/`D` turn the ship, jump and sneak
    climb and dive, `G` lets go (right-clicking the wheel again also works). You keep full control
    of the camera while piloting.
-5. `/astra disassemble` turns a construct back into ordinary world blocks.
+5. Press `V` to change what the wand does: **assemble**, **disassemble** (click a construct to
+   return every block to the world) or **grab** (carry a construct on the end of your gaze).
+   `/astra disassemble` still works for operators.
 
 The selection must be one connected group of blocks, and you must be allowed to build there —
 assembly deletes world blocks, so it respects spawn protection and land-claim mods.

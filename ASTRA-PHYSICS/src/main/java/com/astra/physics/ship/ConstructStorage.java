@@ -40,7 +40,7 @@ import com.astra.physics.util.BlockStateSerializer;
  * place, so a crash mid-save cannot leave a half-written file where the good one used to be.
  */
 public final class ConstructStorage {
-    private static final int FORMAT_VERSION = 2;
+    private static final int FORMAT_VERSION = 3;
     private static final String DIRECTORY = AstraPhysics.MOD_ID;
 
     private ConstructStorage() {}
@@ -142,6 +142,12 @@ public final class ConstructStorage {
         out.writeInt(construct.enginePowerStep());
         out.writeDouble(construct.yaw());
 
+        out.writeBoolean(construct.altitudeHold());
+        out.writeDouble(construct.targetAltitude());
+        out.writeBoolean(construct.headingHold());
+        out.writeDouble(construct.targetYaw());
+        out.writeInt(construct.speedLimitStep());
+
         List<StoredBlock> blocks = construct.blocks();
         out.writeInt(blocks.size());
         for (StoredBlock block : blocks) {
@@ -174,6 +180,12 @@ public final class ConstructStorage {
         String modeName = in.readUTF();
         int powerStep = in.readInt();
         double savedYaw = in.readDouble();
+
+        boolean altitudeHold = in.readBoolean();
+        double targetAltitude = in.readDouble();
+        boolean headingHold = in.readBoolean();
+        double targetYaw = in.readDouble();
+        int speedLimit = in.readInt();
 
         int blockCount = in.readInt();
         List<StoredBlock> blocks = new ArrayList<>(Math.max(0, Math.min(blockCount, 65_536)));
@@ -210,6 +222,7 @@ public final class ConstructStorage {
 
         PhysicsConstruct construct = new PhysicsConstruct(id, blocks, x, y, z);
         construct.restoreRuntimeState(vx, vy, vz, parseMode(modeName), powerStep, savedYaw);
+        construct.restoreAutopilot(altitudeHold, targetAltitude, headingHold, targetYaw, speedLimit);
         return construct;
     }
 

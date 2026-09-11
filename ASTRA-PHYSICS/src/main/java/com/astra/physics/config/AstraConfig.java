@@ -38,6 +38,11 @@ public final class AstraConfig {
     public int maxSelectionScanVolume = 65_536;
     /** Maximum constructs allowed per dimension. Prevents accidental server-wide lag. */
     public int maxConstructsPerDimension = 64;
+    /** Furthest a carried construct can be held from the carrier's eyes. */
+    public double maxGrabDistance = 24.0;
+    /** Largest construct the wand can carry. Bigger hulls have to fly themselves. */
+    public int maxGrabBlocks = 512;
+
     /** Reach, in blocks, for interacting with construct-local blocks. */
     public double interactionReach = 6.0;
 
@@ -139,6 +144,8 @@ public final class AstraConfig {
         maxSelectionScanVolume = clamp(maxSelectionScanVolume, 1, 4_194_304);
         maxConstructsPerDimension = clamp(maxConstructsPerDimension, 1, 4096);
         interactionReach = clamp(interactionReach, 1.0, 64.0);
+        maxGrabDistance = clamp(maxGrabDistance, 2.0, 128.0);
+        maxGrabBlocks = clamp(maxGrabBlocks, 1, 32_768);
 
         gravityPerTick = clamp(gravityPerTick, -4.0, 0.0);
         airDamping = clamp(airDamping, 0.50, 1.0);

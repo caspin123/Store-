@@ -1,0 +1,49 @@
+{
+  "variants": {
+    "facing=north,trim=0": {
+      "model": "astra_physics:block/stabilizer_0"
+    },
+    "facing=north,trim=1": {
+      "model": "astra_physics:block/stabilizer_1"
+    },
+    "facing=north,trim=2": {
+      "model": "astra_physics:block/stabilizer_2"
+    },
+    "facing=east,trim=0": {
+      "model": "astra_physics:block/stabilizer_0",
+      "y": 90
+    },
+    "facing=east,trim=1": {
+      "model": "astra_physics:block/stabilizer_1",
+      "y": 90
+    },
+    "facing=east,trim=2": {
+      "model": "astra_physics:block/stabilizer_2",
+      "y": 90
+    },
+    "facing=south,trim=0": {
+      "model": "astra_physics:block/stabilizer_0",
+      "y": 180
+    },
+    "facing=south,trim=1": {
+      "model": "astra_physics:block/stabilizer_1",
+      "y": 180
+    },
+    "facing=south,trim=2": {
+      "model": "astra_physics:block/stabilizer_2",
+      "y": 180
+    },
+    "facing=west,trim=0": {
+      "model": "astra_physics:block/stabilizer_0",
+      "y": 270
+    },
+    "facing=west,trim=1": {
+      "model": "astra_physics:block/stabilizer_1",
+      "y": 270
+    },
+    "facing=west,trim=2": {
+      "model": "astra_physics:block/stabilizer_2",
+      "y": 270
+    }
+  }
+}

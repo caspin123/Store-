@@ -1,0 +1,16 @@
+{
+  "variants": {
+    "spin=0": {
+      "model": "astra_physics:block/gyro_0"
+    },
+    "spin=1": {
+      "model": "astra_physics:block/gyro_1"
+    },
+    "spin=2": {
+      "model": "astra_physics:block/gyro_2"
+    },
+    "spin=3": {
+      "model": "astra_physics:block/gyro_3"
+    }
+  }
+}

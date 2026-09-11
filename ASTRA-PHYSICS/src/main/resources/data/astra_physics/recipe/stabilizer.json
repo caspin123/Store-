@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "group": "astra_physics",
+  "pattern": [
+    "/C/",
+    "/CI",
+    "/C/"
+  ],
+  "key": {
+    "C": "minecraft:white_wool",
+    "I": "minecraft:iron_ingot"
+  },
+  "result": {
+    "id": "astra_physics:stabilizer",
+    "count": 1
+  }
+}

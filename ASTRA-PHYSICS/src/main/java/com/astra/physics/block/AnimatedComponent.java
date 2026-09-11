@@ -29,6 +29,8 @@ public interface AnimatedComponent {
      *   <li>{@link Drive#CYCLE_FROM_ONE} keeps frame 0 as the idle pose and cycles the rest, for
      *       components that must look inert when they are not running.</li>
      *   <li>{@link Drive#STEER} maps the helm's steering input onto the frame range.</li>
+     *   <li>{@link Drive#MANUAL} leaves the frame alone: it is a setting the player chose, stored
+     *       on the block itself, not something that moves on its own.</li>
      * </ul>
      */
     Drive drive();
@@ -66,6 +68,7 @@ public interface AnimatedComponent {
     enum Drive {
         CYCLE,
         CYCLE_FROM_ONE,
-        STEER
+        STEER,
+        MANUAL
     }
 }

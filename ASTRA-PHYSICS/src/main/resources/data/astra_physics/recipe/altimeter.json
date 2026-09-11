@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "group": "astra_physics",
+  "pattern": [
+    "/I/",
+    "IQI",
+    "/I/"
+  ],
+  "key": {
+    "I": "minecraft:iron_ingot",
+    "Q": "minecraft:clock"
+  },
+  "result": {
+    "id": "astra_physics:altimeter",
+    "count": 1
+  }
+}

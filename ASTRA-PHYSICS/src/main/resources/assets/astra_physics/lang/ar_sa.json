@@ -15,7 +15,7 @@
   "block.astra_physics.governor": "منظّم سرعة ASTRA",
   "block.astra_physics.gyro": "جيروسكوب ASTRA",
   "message.astra_physics.prefix": "ASTRA ",
-  "key.categories.astra_physics": "ASTRA Physics",
+  "key.category.astra_physics.controls": "ASTRA Physics",
   "key.astra_physics.leave_helm": "ترك الدفة",
   "key.astra_physics.wand_mode": "تبديل وضع العصا",
   "message.astra_physics.selection.point1": "تم تحديد النقطة الأولى عند %s. اضغط يمين على النقطة الثانية، أو تسلل + يمين للمسح.",

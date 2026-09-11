@@ -15,7 +15,7 @@
   "block.astra_physics.governor": "ASTRA Governor",
   "block.astra_physics.gyro": "ASTRA Gyro",
   "message.astra_physics.prefix": "ASTRA ",
-  "key.categories.astra_physics": "ASTRA Physics",
+  "key.category.astra_physics.controls": "ASTRA Physics",
   "key.astra_physics.leave_helm": "Leave Helm",
   "key.astra_physics.wand_mode": "Cycle Wand Mode",
   "message.astra_physics.selection.point1": "Point 1 set at %s. Right-click point 2, or sneak + right-click to clear.",

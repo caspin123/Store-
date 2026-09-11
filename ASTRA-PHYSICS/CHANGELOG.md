@@ -1,5 +1,28 @@
 # Changelog
 
+## 0.4.1-alpha
+
+Build fixes for 1.21.11, found by building on device.
+
+- **Key mapping categories became a type.** A binding's category is now a registered
+  `KeyMapping.Category` rather than a bare translation key, so the category is registered once
+  and handed to both bindings. The translation key moves to `key.category.astra_physics.controls`.
+- **`WingBlock` and `SailBlock` used `Direction` without importing it.** Both gained the type when
+  they learned to tile, and neither gained the import.
+
+### The validator now catches a missing import
+
+This is the second time a missing import reached a build, and the reason is structural: compiling
+without Minecraft on the classpath reports every unresolved name as `cannot find symbol`, so a
+genuine mistake is indistinguishable from the hundreds of expected errors and gets filtered out
+with them.
+
+The validator now finds them from the codebase's own habits instead. If the project imports
+`net.minecraft.core.Direction` in twenty files and one file uses `Direction` bare, that file is
+wrong. It needs no knowledge of Minecraft's API, and it says nothing about types the project never
+imports, so it stays quiet rather than guessing. Both of the imports fixed above were confirmed
+caught by deleting them again and watching the check fail.
+
 ## 0.4.0-alpha
 
 Five new components and a rebuilt wand, reimplemented from ideas in

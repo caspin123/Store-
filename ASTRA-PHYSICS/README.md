@@ -86,8 +86,9 @@ python3 tools/validate.py           # asset checks the Java compiler cannot do
 
 `validate.py` catches what a successful build will not: a message with no translation, a
 blockstate pointing at a renamed model, a model naming a texture nobody drew, geometry outside the
-range Minecraft loads, and an animated block whose frame count disagrees with its models. Run it
-before every build; `BUILD-TERMUX.sh` already does.
+range Minecraft loads, an animated block whose frame count disagrees with its models, and a type
+used without the import the rest of the project gives it. Run it before every build;
+`BUILD-TERMUX.sh` already does.
 
 Editing shapes means editing `tools/generate_models.py` and re-running it, not hand-editing the
 generated JSON. `tools/model_kit.py` handles the awkward part: Minecraft only bakes rotations of

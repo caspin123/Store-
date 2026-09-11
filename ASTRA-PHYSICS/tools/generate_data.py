@@ -42,7 +42,7 @@ ENGLISH = {
 
     "message.astra_physics.prefix": "ASTRA ",
 
-    "key.categories.astra_physics": "ASTRA Physics",
+    "key.category.astra_physics.controls": "ASTRA Physics",
     "key.astra_physics.leave_helm": "Leave Helm",
     "key.astra_physics.wand_mode": "Cycle Wand Mode",
 
@@ -159,7 +159,7 @@ ARABIC = {
 
     "message.astra_physics.prefix": "ASTRA ",
 
-    "key.categories.astra_physics": "ASTRA Physics",
+    "key.category.astra_physics.controls": "ASTRA Physics",
     "key.astra_physics.leave_helm": "ترك الدفة",
     "key.astra_physics.wand_mode": "تبديل وضع العصا",
 

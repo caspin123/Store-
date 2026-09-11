@@ -24,5 +24,24 @@ Two of its design ideas were reimplemented from scratch for ASTRA's own solver:
   speed and wings. ASTRA's version extends the mod's existing buoyancy model into air, with lift
   thinning at altitude to give an airship a natural ceiling.
 
-No textures, models, sounds or other assets were taken. Every ASTRA component is drawn from this
-mod's own texture set.
+### Assets
+
+One texture is used directly, under Apache-2.0, with the licence and attribution shipped in
+`licenses/`:
+
+- `assets/astra_physics/textures/block/balloon_casing.png`, unmodified.
+
+No Clockwork code, models or sounds are included, and none could usefully have been: Clockwork
+calls Valkyrien Skies and Create APIs that this mod does not have, and its larger textures are UV
+atlases painted for its own model geometry rather than tileable materials.
+
+## Material palette
+
+ASTRA's components are drawn with vanilla Minecraft block textures, referenced by id rather than
+copied. The mod's original hand-drawn tiles are still in the resource pack and can be switched
+back to by editing `TEXTURES` in `tools/model_kit.py`.
+
+The change was made because the original tiles read as smears on the models, and the cause was
+scale rather than draughtsmanship: a 64x64 texture carrying a 3x3 motif gives each cell about 21
+pixels, so a model element two pixels wide samples only a fragment of one cell. Vanilla block
+textures are authored as 16x16 materials precisely so they stay readable at any element size.

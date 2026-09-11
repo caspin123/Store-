@@ -32,6 +32,13 @@ processResources {
     filesMatching("fabric.mod.json") {
         expand "version": inputs.properties.version
     }
+
+    // Apache-2.0 requires the licence and attribution to travel with anything that redistributes
+    // the covered file, so they go inside the jar rather than only living in the repository.
+    from("licenses") {
+        into "licenses"
+    }
+    from("CREDITS.md")
 }
 
 tasks.withType(JavaCompile).configureEach {

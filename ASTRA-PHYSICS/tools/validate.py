@@ -115,7 +115,15 @@ def check_model_textures():
         for name, value in declared.items():
             if value.startswith("#"):
                 continue
-            texture = value.split(":", 1)[-1]
+            namespace, _, texture = value.rpartition(":")
+            # Vanilla textures ship with the game, so there is no file here to check. Any other
+            # namespace would be a dependency on a mod this one does not declare.
+            if namespace in ("minecraft", ""):
+                continue
+            if namespace != "astra_physics":
+                failures.append(f"{os.path.basename(path)}: texture {value} belongs to "
+                                f"'{namespace}', which this mod does not depend on")
+                continue
             target = os.path.join(ASSETS, "textures", texture + ".png")
             if not os.path.exists(target):
                 failures.append(f"{os.path.basename(path)}: texture {value} does not exist")

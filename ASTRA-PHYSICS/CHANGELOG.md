@@ -1,5 +1,34 @@
 # Changelog
 
+## 0.3.1-alpha
+
+### Components are readable now
+
+The mod's own 64x64 tiles rendered as smears, and the cause was scale rather than draughtsmanship:
+a 64x64 texture carrying a 3x3 motif gives each cell about 21 pixels, so a model element two
+pixels wide samples only a fragment of one cell and shows no recognisable detail at all.
+
+The palette now uses vanilla Minecraft block textures, referenced by id rather than copied. They
+are authored as 16x16 materials precisely so they stay readable at any element size, they carry
+real shading, and they cost nothing in licensing or dependencies. The original tiles are still in
+the resource pack — switching back is one edit to `TEXTURES` in `tools/model_kit.py`.
+
+One texture is imported from [Clockwork](https://github.com/ValkyrienSkies/Clockwork) for the
+balloon envelope, under Apache-2.0, with the licence text and attribution shipped in `licenses/`
+and included in the built jar. The mod's declared licence is now `All-Rights-Reserved` plus
+`Apache-2.0` to reflect that honestly.
+
+Clockwork's larger textures could not be used: they are UV atlases painted for its own model
+geometry rather than tileable materials, so they only make sense on the models they were drawn
+for. Its generic materials come from Create, not from Clockwork, so they were never Clockwork's
+to pass on.
+
+### Fixed
+
+- The asset validator accepted any texture namespace. It now allows vanilla references, which
+  ship with the game, and reports a reference to any other mod's namespace as the undeclared
+  dependency it would be.
+
 ## 0.3.0-alpha
 
 Two new components, both reimplemented from ideas in

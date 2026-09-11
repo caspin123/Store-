@@ -10,17 +10,29 @@ bookkeeping so the model files stay readable.
 
 ALLOWED_ROTATIONS = (-45.0, -22.5, 0.0, 22.5, 45.0)
 
+# Material palette.
+#
+# These were originally hand-drawn 64x64 tiles, and they read as smears on the models. The cause
+# was scale, not draughtsmanship: a 64x64 texture carrying a 3x3 motif gives each cell about 21
+# pixels, and a model element two pixels wide samples only a fragment of one cell. Vanilla block
+# textures are authored as 16x16 materials precisely so they stay readable at any element size,
+# they carry real shading, and they are always present with no licence or dependency attached.
+#
+# To go back to the mod's own textures, point these entries at astra_physics:block/... again -
+# the files are still in the resource pack. Nothing else has to change.
 TEXTURES = {
-    "particle": "astra_physics:block/metal_dark",
-    "dark": "astra_physics:block/metal_dark",
-    "metal": "astra_physics:block/metal_plate",
-    "brass": "astra_physics:block/brass",
-    "wood": "astra_physics:block/wood",
-    "cloth": "astra_physics:block/cloth",
-    "cyan": "astra_physics:block/cyan_core",
-    "grid": "astra_physics:block/cyan_grid",
-    "thrust": "astra_physics:block/thruster_face",
-    "black": "astra_physics:block/black_iron",
+    "particle": "minecraft:block/deepslate_tiles",
+    "dark": "minecraft:block/deepslate_tiles",
+    "metal": "minecraft:block/iron_block",
+    "brass": "minecraft:block/copper_block",
+    "wood": "minecraft:block/spruce_planks",
+    "cloth": "minecraft:block/white_wool",
+    "cyan": "minecraft:block/sea_lantern",
+    "grid": "minecraft:block/copper_grate",
+    "thrust": "minecraft:block/magma",
+    "black": "minecraft:block/polished_blackstone",
+    # Imported from Clockwork under Apache-2.0. See CREDITS.md and licenses/.
+    "casing": "astra_physics:block/balloon_casing",
 }
 
 FACE_NAMES = ("down", "up", "north", "south", "west", "east")

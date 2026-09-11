@@ -390,7 +390,7 @@ def balloon_frame(frame):
         grow = swell * (1.0 - inset / 5.0)
         a = max(0.0, inset - grow)
         b = min(16.0, 16.0 - inset + grow)
-        elements.append(box((a, y0, a), (b, y1, b), "cloth"))
+        elements.append(box((a, y0, a), (b, y1, b), "casing"))
 
     # banding around the middle, riding the swell
     grow = swell

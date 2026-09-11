@@ -1,0 +1,121 @@
+package org.valkyrienskies.clockwork.forge;
+
+import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.vertex.PoseStack;
+import net.createmod.catnip.animation.AnimationTickHolder;
+import net.createmod.catnip.render.DefaultSuperRenderTypeBuffer;
+import net.createmod.catnip.render.SuperRenderTypeBuffer;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.world.phys.Vec3;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.client.event.InputEvent;
+import net.minecraftforge.client.event.RenderLevelStageEvent;
+import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
+import org.valkyrienskies.clockwork.ClockworkModClient;
+import org.valkyrienskies.clockwork.client.render.airpocket.AirpocketRenderer;
+import org.valkyrienskies.clockwork.client.render.debug.KelvinEdgeRenderer;
+import org.valkyrienskies.clockwork.content.curiosities.meteor.MeteorRenderer;
+import org.valkyrienskies.clockwork.util.arc.LightningRenderer;
+import org.valkyrienskies.core.api.world.ClientShipWorld;
+import org.valkyrienskies.mod.api.ValkyrienSkies;
+
+import static net.createmod.ponder.PonderClient.isGameActive;
+
+@Mod.EventBusSubscriber(Dist.CLIENT)
+public class ClockworkClientEvents {
+    @SubscribeEvent
+    public static void onRenderWorld(RenderLevelStageEvent event) {
+        if (event.getStage() == RenderLevelStageEvent.Stage.AFTER_TRANSLUCENT_BLOCKS) {
+            AirpocketRenderer.render(Minecraft.getInstance().level, event.getPoseStack(), Minecraft.getInstance().gameRenderer.getMainCamera());
+            ClientShipWorld shipWorld = ValkyrienSkies.getShipWorld(Minecraft.getInstance());
+            shipWorld.getLoadedShips().forEach ( ship -> {
+                MeteorRenderer.INSTANCE.onShipRender(ship, event.getPoseStack(), event.getCamera(), Minecraft.getInstance().renderBuffers().bufferSource(), AnimationTickHolder.getPartialTicks());
+            });
+        }
+
+        if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_PARTICLES) {
+            return;
+        }
+
+
+
+        PoseStack ms = event.getPoseStack();
+
+        assert Minecraft.getInstance().level != null;
+        KelvinEdgeRenderer.render(Minecraft.getInstance().level, event.getPoseStack(), event.getCamera());
+
+        ms.pushPose();
+        SuperRenderTypeBuffer buffer = DefaultSuperRenderTypeBuffer.getInstance();
+        float partialTicks = AnimationTickHolder.getPartialTicks();
+        Vec3 camera = Minecraft.getInstance().gameRenderer.getMainCamera()
+                .getPosition();
+
+        ClockworkModClient.getWANDERWAND_EFFECT_RENDERER().render(ms, DefaultSuperRenderTypeBuffer.getInstance(), camera, partialTicks);
+        LightningRenderer.INSTANCE.onRenderLevelStage(ms, partialTicks);
+
+        buffer.draw();
+        RenderSystem.enableCull();
+        ms.popPose();
+    }
+
+    @SubscribeEvent
+    public static void onTick(TickEvent.ClientTickEvent event) {
+        if (!isGameActive()) {
+            return;
+        }
+
+        if (event.phase == TickEvent.Phase.START) {
+            return;
+        }
+
+        ClockworkModForgeClient.GRAVITRON_HANDLER.tick();
+        ClockworkModForgeClient.WANDERWAND_HANDLER.tick();
+
+        ClockworkModClient.getOUTLINER().tickOutlines();
+        ClockworkModClient.getWANDER_OUTLINER().tickOutlines();
+    }
+
+    @SubscribeEvent
+    public static void onKeyInput(InputEvent.Key event) {
+        if (Minecraft.getInstance().screen != null) {
+            return;
+        }
+
+        int key = event.getKey();
+        boolean pressed = !(event.getAction() == 0);
+
+        ClockworkModForgeClient.GRAVITRON_HANDLER.onKeyInput(key, pressed);
+        ClockworkModForgeClient.WANDERWAND_HANDLER.onKeyInput(key, pressed);
+    }
+
+    @SubscribeEvent
+    public static void onMouseScrolled(InputEvent.MouseScrollingEvent event) {
+        if (Minecraft.getInstance().screen != null) {
+            return;
+        }
+
+        double delta = event.getScrollDelta();
+        boolean cancelled = ClockworkModForgeClient.GRAVITRON_HANDLER.mouseScrolled(delta) || ClockworkModForgeClient.WANDERWAND_HANDLER.mouseScrolled(delta);
+        event.setCanceled(cancelled);
+    }
+
+    @SubscribeEvent
+    public static void onMouseInput(InputEvent.MouseButton event) {
+        if (Minecraft.getInstance().screen != null ||  !event.isCancelable()) return;
+
+
+        int button = event.getButton();
+        boolean pressed = !(event.getAction() == 0);
+
+        if (ClockworkModForgeClient.GRAVITRON_HANDLER.onMouseInput(button, pressed)) {
+            event.setCanceled(true);
+        }
+
+        if (ClockworkModForgeClient.WANDERWAND_HANDLER.onMouseInput(button, pressed)) {
+            event.setCanceled(true);
+        }
+    }
+}

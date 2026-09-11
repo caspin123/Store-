@@ -1,0 +1,72 @@
+package org.valkyrienskies.clockwork.content.curiosities.tools.gravitron.tool
+
+import com.mojang.blaze3d.vertex.PoseStack
+import com.simibubi.create.foundation.utility.RaycastHelper
+import net.createmod.catnip.render.SuperRenderTypeBuffer
+import net.minecraft.client.Minecraft
+import net.minecraft.core.BlockPos
+import net.minecraft.world.phys.HitResult
+import net.minecraft.world.phys.Vec3
+import org.valkyrienskies.clockwork.ClockworkConfig
+import org.valkyrienskies.clockwork.content.curiosities.tools.gravitron.GravitronHandler
+import org.valkyrienskies.clockwork.platform.SharedValues
+import org.valkyrienskies.mod.common.util.toDoubles
+
+abstract class GravitronToolBase : IGravitronTool {
+    protected var gravitronHandler: GravitronHandler? = null
+    var clickedPos: BlockPos? = null
+    var clickedLocation: Vec3? = null
+
+
+    /**
+     * This function will store the block the player looks
+     * at (within [ClockworkConfig.Server.survivalGravitronMaxRange] blocks if [smallRange], otherwise 1000 blocks),
+     * to be accessed by the Gravitrons other functions
+     */
+    fun updateTargetPos(smallRange: Boolean = true) {
+        val player = Minecraft.getInstance().player
+
+        clickedPos = null
+        clickedLocation = null
+
+        val trace = RaycastHelper.rayTraceRange(
+            player!!.level(), player, if (smallRange) ClockworkConfig.SERVER.survivalGravitronMaxRange else 1000.0
+        )
+        if (trace == null || trace.type != HitResult.Type.BLOCK) {
+            return
+        }
+
+        clickedPos = trace.blockPos.immutable()
+
+        clickedLocation = clickedPos!!.toDoubles().add(0.5,0.5,0.5)
+    }
+
+    override fun handleRightClick(isRegular: Boolean): Boolean {
+        return false
+    }
+
+    override fun handleMouseWheel(delta: Double): Boolean {
+        return false;
+    }
+
+    override fun init() {
+        gravitronHandler = SharedValues.gravitronHandler
+    }
+
+    override fun renderTool(ms: PoseStack?, buffer: SuperRenderTypeBuffer?, camera: Vec3?) {
+    }
+
+    override fun renderOverlay(poseStack: PoseStack, partialTicks: Float, width: Int, height: Int) {
+    }
+
+    companion object {
+        @JvmField
+        var GRAB: Byte = 1
+
+        @JvmField
+        var ASSEMBLE: Byte = 2
+
+        @JvmField
+        var GRABSSEMBLE: Byte = 3
+    }
+}

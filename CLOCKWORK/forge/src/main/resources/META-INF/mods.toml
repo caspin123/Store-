@@ -1,0 +1,59 @@
+modLoader = "javafml"
+loaderVersion = "[${forge_version},)"
+issueTrackerURL = "https://github.com/ValkyrienSkies/Clockwork-Issues/issues"
+license = "Apache-2.0"
+
+[[mods]]
+modId = "vs_clockwork"
+version = "${version}"
+displayName = "Clockwork"
+authors = ["potato", "priestoffern", "mrsterner", "fluffy"]
+description = '''
+Clockwork is a mod built on the framework of Valkyrien Skies 2 and Create, providing new opportunities for exploration,
+and new ways to discover your own path to adventure in your world.
+From new mechanics to new biomes, new creatures and new machines-
+when magical whimsy and technological ingenuity collide, Clockwork stands in their wake.
+'''
+logoFile = "icon.png"
+
+[[dependencies.vs_clockwork]]
+modId = "forge"
+mandatory = true
+versionRange = "[${forge_version},)"
+ordering = "NONE"
+side = "BOTH"
+
+[[dependencies.vs_clockwork]]
+modId = "minecraft"
+mandatory = true
+versionRange = "${minecraft_version}"
+ordering = "NONE"
+side = "BOTH"
+
+[[dependencies.vs_clockwork]]
+modId = "valkyrienskies"
+mandatory = true
+versionRange = "[2.4.6,)"
+ordering = "AFTER"
+side = "BOTH"
+
+[[dependencies.vs_clockwork]]
+modId = "kelvin"
+mandatory = true
+versionRange = "[0.4.0,)"
+ordering = "AFTER"
+side = "BOTH"
+
+[[dependencies.vs_clockwork]]
+modId = "create"
+mandatory = true
+versionRange = "[6.0.7,)"
+ordering = "AFTER"
+side = "BOTH"
+
+[[dependencies.vs_clockwork]]
+modId = "architectury"
+mandatory = true
+versionRange = "[9.1.12,)"
+ordering = "AFTER"
+side = "BOTH"

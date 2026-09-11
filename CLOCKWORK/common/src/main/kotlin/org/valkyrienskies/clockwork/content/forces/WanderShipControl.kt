@@ -1,0 +1,68 @@
+package org.valkyrienskies.clockwork.content.forces
+
+import com.fasterxml.jackson.annotation.JsonAutoDetect
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize
+import com.fasterxml.jackson.databind.annotation.JsonSerialize
+import net.minecraft.core.BlockPos
+import org.joml.Vector3d
+import org.joml.Vector3i
+import org.valkyrienskies.clockwork.ClockworkConfig
+import org.valkyrienskies.clockwork.util.Vector3icKeyDeserializer
+import org.valkyrienskies.clockwork.util.Vector3icKeySerializer
+import org.valkyrienskies.core.api.ships.*
+import org.valkyrienskies.core.api.world.PhysLevel
+import org.valkyrienskies.mod.common.util.toBlockPos
+import org.valkyrienskies.mod.common.util.toJOML
+import java.util.concurrent.ConcurrentHashMap
+
+@JsonAutoDetect(
+    fieldVisibility = JsonAutoDetect.Visibility.ANY,
+    getterVisibility = JsonAutoDetect.Visibility.NONE,
+    isGetterVisibility = JsonAutoDetect.Visibility.NONE,
+    setterVisibility = JsonAutoDetect.Visibility.NONE
+)
+@JsonIgnoreProperties(ignoreUnknown = true)
+class WanderShipControl : ShipPhysicsListener {
+
+    @JsonSerialize(keyUsing = Vector3icKeySerializer::class)
+    @JsonDeserialize(keyUsing = Vector3icKeyDeserializer::class)
+    val wanderBlocks: ConcurrentHashMap<Vector3i, Double> = ConcurrentHashMap()
+
+    override fun physTick(physShip: PhysShip, physLevel: PhysLevel) {
+        val meanPos = Vector3d()
+        for (vector3i in wanderBlocks.keys) {
+            // I don't like adding magic +0.5 numbers, so I'm going to do these conversion shenanigans instead
+            meanPos.add(vector3i.toBlockPos().center.toJOML())
+        }
+        meanPos.div(wanderBlocks.size.toDouble())
+
+        val sumForce: Double = wanderBlocks.values.sum()
+        // gravity is positive for whatever reason
+        val (_, _, gravity) = physLevel.aerodynamicUtils.getAtmosphereForDimension(physLevel.dimension)
+        val yForce = sumForce * gravity * ClockworkConfig.SERVER.wanderOreForceMultiplier
+        val force = Vector3d(0.0, yForce, 0.0)
+
+        if (meanPos.isFinite && !meanPos.length().isNaN() && force.isFinite && !force.length().isNaN()) {
+            physShip.applyWorldForceToModelPos(force, meanPos)
+        }
+    }
+
+    fun addBlock(blockPos: BlockPos, weight: Double) {
+        wanderBlocks[blockPos.toJOML()] = weight
+    }
+
+    fun removeBlock(blockPos: BlockPos) {
+        wanderBlocks.remove(blockPos.toJOML())
+    }
+
+    companion object {
+
+        fun getOrCreate(ship: LoadedServerShip): WanderShipControl {
+            if (ship.getAttachment(WanderShipControl::class.java) == null) {
+                ship.setAttachment(WanderShipControl())
+            }
+            return ship.getAttachment(WanderShipControl::class.java)!!
+        }
+    }
+}

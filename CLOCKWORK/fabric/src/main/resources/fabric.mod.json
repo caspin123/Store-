@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "id": "vs_clockwork",
+  "version": "${version}",
+  "name": "Clockwork",
+  "description": "An over-the-top spin on Create, powered by Valkyrien Skies.",
+  "authors": [
+    "Potato"
+  ],
+  "contributors": [
+    "Ewoudje",
+    "Triode",
+    "Rubydesic",
+    "Fluffy",
+    "TechTastic",
+    "MrSterner",
+    "PriestOfFern"
+  ],
+  "contact": {
+    "homepage": "https://valkyrienskies.org/",
+    "sources": "https://github.com/ValkyrienSkies/Clockwork"
+  },
+  "license": "Apache-2.0",
+  "icon": "assets/vs_clockwork/icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "org.valkyrienskies.clockwork.fabric.ClockworkModFabric"
+    ],
+    "client": [
+      "org.valkyrienskies.clockwork.fabric.ClockworkModFabricClient"
+    ],
+    "modmenu": [
+        "org.valkyrienskies.clockwork.fabric.ClockworkModFabric${'$'}ModMenu"
+    ]
+  },
+  "mixins": [
+    "vs_clockwork-common.mixins.json",
+    "vs_clockwork.mixins.json"
+  ],
+  "depends": {
+    "minecraft": ">=1.20.1",
+    "valkyrienskies": ">=2.4.6",
+    "kelvin": ">=0.4.0",
+    "create": ">=6.0.7",
+    "architectury": ">=9.1.12"
+  }
+}

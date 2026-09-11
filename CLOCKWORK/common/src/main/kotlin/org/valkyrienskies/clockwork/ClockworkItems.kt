@@ -1,0 +1,286 @@
+package org.valkyrienskies.clockwork
+
+import com.simibubi.create.AllTags
+import com.simibubi.create.AllTags.AllItemTags
+import com.simibubi.create.content.equipment.goggles.GogglesItem
+import com.simibubi.create.content.processing.sequenced.SequencedAssemblyItem
+import com.simibubi.create.foundation.data.AssetLookup
+import com.tterrag.registrate.util.entry.ItemEntry
+import net.minecraft.tags.ItemTags
+import net.minecraft.world.entity.EquipmentSlot
+import net.minecraft.world.item.Item
+import net.minecraft.world.item.Rarity
+import net.minecraft.world.item.Tiers
+import org.valkyrienskies.clockwork.ClockworkMod.REGISTRATE
+import org.valkyrienskies.clockwork.content.contraptions.propeller.blades.item.BladeItem
+import org.valkyrienskies.clockwork.content.contraptions.propeller.blades.item.BladeItemRenderer
+import org.valkyrienskies.clockwork.content.curiosities.WanderliteCrystal
+import org.valkyrienskies.clockwork.content.curiosities.WanderliteCubeItemRenderer
+import org.valkyrienskies.clockwork.content.curiosities.WanderliteItem
+import org.valkyrienskies.clockwork.content.curiosities.WanderlustMusicDisc
+import org.valkyrienskies.clockwork.content.curiosities.aeronaut.AeronautBootsItem
+import org.valkyrienskies.clockwork.content.curiosities.aeronaut.AeronautGogglesItem
+import org.valkyrienskies.clockwork.content.curiosities.aeronaut.AeronautGogglesRenderer
+import org.valkyrienskies.clockwork.content.curiosities.aeronaut.AeronautJacketItem
+import org.valkyrienskies.clockwork.content.curiosities.aeronaut.AeronautJumpersItem
+import org.valkyrienskies.clockwork.content.curiosities.tools.drill.HandheldDrillRenderer
+import org.valkyrienskies.clockwork.content.curiosities.tools.drill.HandheldMechanicalDrill
+import org.valkyrienskies.clockwork.content.curiosities.tools.wanderwand.WanderwandItemRenderer
+import org.valkyrienskies.clockwork.content.curiosities.tools.gravitron.CreativeGravitronItem
+import org.valkyrienskies.clockwork.content.curiosities.tools.gravitron.GravitronItem
+import org.valkyrienskies.clockwork.content.curiosities.tools.gravitron.GravitronItemRenderer
+import org.valkyrienskies.clockwork.content.curiosities.tools.saw.HandheldMechanicalSaw
+import org.valkyrienskies.clockwork.content.curiosities.tools.saw.HandheldSawRenderer
+import org.valkyrienskies.clockwork.content.curiosities.tools.wanderwand.WanderwandItem
+import org.valkyrienskies.clockwork.content.curiosities.tools.screwdriver.ScrewdriverItem
+import org.valkyrienskies.clockwork.content.kinetics.universal_shaft.UniversalShaftItem
+import org.valkyrienskies.clockwork.content.logistics.gas.backtank.GasBackTankItem
+import org.valkyrienskies.clockwork.content.physicalities.extendon.ExtendonHoseItem
+import org.valkyrienskies.clockwork.platform.CWItem
+import org.valkyrienskies.clockwork.util.builder.ClockworkRegistrate
+import java.util.function.Supplier
+
+object ClockworkItems {
+
+    @JvmField
+    val WANDERLUST_DISC: ItemEntry<WanderlustMusicDisc> =
+        REGISTRATE.item<WanderlustMusicDisc>("music_disc_wanderlust") { properties: Item.Properties? ->
+            WanderlustMusicDisc(properties!!)
+        }
+            .properties { it.rarity(Rarity.EPIC).stacksTo(1) }
+            .tab(ClockworkMod.BASE_CREATIVE_TABINFO)
+            .tag(ItemTags.MUSIC_DISCS)
+            .register()
+
+    @JvmField
+    val GRAVITRON: ItemEntry<GravitronItem> =
+        REGISTRATE.item<GravitronItem>("gravitron") { properties: Item.Properties? ->
+            GravitronItem(properties!!)
+        }
+            .properties {
+                it.stacksTo(1)
+                it.rarity(Rarity.UNCOMMON)
+            }
+            .tab(ClockworkMod.BASE_CREATIVE_TABINFO)
+            .transform(ClockworkRegistrate.customRenderedItem { Supplier { GravitronItemRenderer() } })
+            .tag(AllTags.AllItemTags.WRENCH.tag)
+            .model(AssetLookup.itemModelWithPartials())
+            .register()
+
+    @JvmField
+    val CREATIVE_GRAVITRON: ItemEntry<CreativeGravitronItem> =
+        REGISTRATE.item<CreativeGravitronItem>("creative_gravitron") { properties: Item.Properties? ->
+            CreativeGravitronItem(properties!!)
+        }
+            .properties {
+                it.stacksTo(1)
+                it.rarity(Rarity.RARE)
+            }
+            .tab(ClockworkMod.BASE_CREATIVE_TABINFO)
+            .transform(ClockworkRegistrate.customRenderedItem { Supplier { GravitronItemRenderer() } })
+            .tag(AllTags.AllItemTags.WRENCH.tag)
+            .register()
+
+    @JvmField
+    val WANDERLITE_CUBE: ItemEntry<WanderliteItem> =
+        REGISTRATE.item<WanderliteItem>("wanderlite_cube") { properties: Item.Properties? ->
+            WanderliteItem(properties!!)
+        }
+            .transform(ClockworkRegistrate.customRenderedItem { Supplier { WanderliteCubeItemRenderer(false) } })
+            .tab(ClockworkMod.BASE_CREATIVE_TABINFO)
+            .register()
+
+    @JvmField
+    val WANDERLITE_MATRIX: ItemEntry<WanderliteItem> =
+        REGISTRATE.item<WanderliteItem>("wanderlite_matrix") { properties: Item.Properties? ->
+            WanderliteItem(properties!!)
+        }
+            .transform(ClockworkRegistrate.customRenderedItem { Supplier { WanderliteCubeItemRenderer(true) } })
+            .tab(ClockworkMod.BASE_CREATIVE_TABINFO)
+            .register()
+
+
+    @JvmField
+    val INCOMPLETE_WANDERWAND: ItemEntry<CWItem> =
+        REGISTRATE.item<CWItem>("incomplete_wanderwand") { properties: Item.Properties? ->
+            CWItem(properties!!)
+        }
+            .properties {
+                it.stacksTo(1)
+                it.rarity(Rarity.UNCOMMON)
+            }
+            .tab(ClockworkMod.BASE_CREATIVE_TABINFO)
+            .transform(ClockworkRegistrate.customRenderedItem { Supplier { WanderwandItemRenderer() } })
+            .tag(AllTags.AllItemTags.WRENCH.tag)
+            .model(AssetLookup.itemModelWithPartials())
+            .register()
+
+
+    @JvmField
+    val PROPELLER_BLADE: ItemEntry<BladeItem> = REGISTRATE.item("propeller_blade") { properties: Item.Properties? ->
+        BladeItem(Tiers.WOOD, 2, 0.4f, properties!!)
+    }
+        .properties {
+            it.durability(100)
+        }
+        .transform(ClockworkRegistrate.customRenderedItem { Supplier { BladeItemRenderer() } })
+        .tag(ClockworkTags.AllItemTags.PROP_BLADE.tag)
+        .tab(ClockworkMod.PHYSICAL_CREATIVE_TABINFO)
+        .register()
+
+    @JvmField
+    val WIDE_PROPELLER_BLADE: ItemEntry<BladeItem> = REGISTRATE.item("wide_propeller_blade") { properties: Item.Properties? ->
+        BladeItem(Tiers.WOOD, 4, 0.2f, properties!!)
+    }
+        .properties {
+            it.durability(200)
+        }
+        .transform(ClockworkRegistrate.customRenderedItem { Supplier { BladeItemRenderer() } })
+        .tag(ClockworkTags.AllItemTags.PROP_BLADE.tag)
+        .tab(ClockworkMod.PHYSICAL_CREATIVE_TABINFO)
+        .register()
+
+    @JvmField
+    val WANDERWAND: ItemEntry<WanderwandItem> =
+        REGISTRATE.item<WanderwandItem>("wanderwand") { properties: Item.Properties? ->
+            WanderwandItem(properties!!)
+        }
+            .properties {
+                it.stacksTo(1)
+                it.rarity(Rarity.UNCOMMON)
+            }
+            .tab(ClockworkMod.BASE_CREATIVE_TABINFO)
+            .transform(ClockworkRegistrate.customRenderedItem { Supplier { WanderwandItemRenderer() } })
+            .tag(AllTags.AllItemTags.WRENCH.tag)
+            .model(AssetLookup.itemModelWithPartials())
+            .register()
+
+    @JvmField
+    val WANDERLITE_CRYSTAL: ItemEntry<WanderliteCrystal> = REGISTRATE.item("wanderlite_crystal") { properties: Item.Properties? ->
+        WanderliteCrystal(properties!!)
+    }
+        .tab(ClockworkMod.BASE_CREATIVE_TABINFO)
+        .register()
+
+    @JvmField
+    val SCREWDRIVER: ItemEntry<ScrewdriverItem> =
+        REGISTRATE.item<ScrewdriverItem>("screwdriver") { properties: Item.Properties? ->
+            ScrewdriverItem(properties!!)
+        }
+            .properties {
+                it.stacksTo(1)
+            }
+            .tab(ClockworkMod.BASE_CREATIVE_TABINFO)
+            .tag(AllTags.AllItemTags.WRENCH.tag)
+            .model(AssetLookup.existingItemModel())
+            .register()
+
+    @JvmField
+    val GAS_BANKTANK: ItemEntry<GasBackTankItem> = REGISTRATE.item<GasBackTankItem>("gas_backtank") { properties: Item.Properties? ->
+        GasBackTankItem(ClockworkBlocks.GAS_BACKTANK.get(), properties!!)
+    }
+        .properties { properties: Item.Properties ->
+            properties.stacksTo(1)
+        }
+        .tab(ClockworkMod.GAS_CREATIVE_TABINFO)
+        .tag(AllItemTags.PRESSURIZED_AIR_SOURCES.tag)
+        .register()
+
+    @JvmField
+    val UNIVERSAL_SHAFT_ITEM: ItemEntry<UniversalShaftItem> =
+        REGISTRATE.item<UniversalShaftItem>("universal_shaft_item") { properties: Item.Properties? ->
+            UniversalShaftItem(properties!!)
+        }
+            .tab(ClockworkMod.BASE_CREATIVE_TABINFO)
+            .register()
+
+    @JvmField
+    val EXTENDON_HOSE: ItemEntry<ExtendonHoseItem> =
+        REGISTRATE.item<ExtendonHoseItem>("extendon_hose") { properties: Item.Properties? ->
+            ExtendonHoseItem(properties!!)
+        }
+            .tab(ClockworkMod.GAS_CREATIVE_TABINFO)
+            .register()
+
+    @JvmField
+    val AERONAUT_GOGGLES: ItemEntry<AeronautGogglesItem> =
+        REGISTRATE.item<AeronautGogglesItem>("aeronaut_goggles") { properties: Item.Properties? ->
+            AeronautGogglesItem(properties!!)
+        }
+            .tab(ClockworkMod.BASE_CREATIVE_TABINFO)
+            .model(AssetLookup.itemModelWithPartials())
+            .transform(ClockworkRegistrate.customRenderedItem { Supplier { AeronautGogglesRenderer() } })
+            .register()
+
+    @JvmField
+    val AERONAUT_JACKET: ItemEntry<AeronautJacketItem> =
+        REGISTRATE.item<AeronautJacketItem>("aeronaut_jacket") { properties: Item.Properties? ->
+            AeronautJacketItem(properties!!)
+        }
+            .tab(ClockworkMod.BASE_CREATIVE_TABINFO)
+            .register()
+
+    @JvmField
+    val AERONAUT_JUMPERS: ItemEntry<AeronautJumpersItem> =
+        REGISTRATE.item<AeronautJumpersItem>("aeronaut_jumpers") { properties: Item.Properties? ->
+            AeronautJumpersItem(properties!!)
+        }
+            .tab(ClockworkMod.BASE_CREATIVE_TABINFO)
+            .register()
+
+    @JvmField
+    val AERONAUT_BOOTS: ItemEntry<AeronautBootsItem> =
+        REGISTRATE.item<AeronautBootsItem>("aeronaut_boots") { properties: Item.Properties? ->
+            AeronautBootsItem(properties!!)
+        }
+            .tab(ClockworkMod.BASE_CREATIVE_TABINFO)
+            .register()
+
+    @JvmField
+    val HANDHELD_DRILL: ItemEntry<HandheldMechanicalDrill> =
+        REGISTRATE.item<HandheldMechanicalDrill>("handheld_drill") { properties: Item.Properties? ->
+            HandheldMechanicalDrill(Tiers.NETHERITE, 1, 1f, properties!!)
+        }
+            .tab(ClockworkMod.BASE_CREATIVE_TABINFO)
+            .transform(ClockworkRegistrate.customRenderedItem { Supplier { HandheldDrillRenderer() } })
+            .tag(ClockworkTags.AllItemTags.DISABLE_SWING_ANIMATION.tag)
+            .model(AssetLookup.itemModelWithPartials())
+            .register()
+
+    @JvmField
+    val HANDHELD_SAW: ItemEntry<HandheldMechanicalSaw> =
+        REGISTRATE.item<HandheldMechanicalSaw>("handheld_saw") { properties: Item.Properties? ->
+            HandheldMechanicalSaw(Tiers.NETHERITE, 4f, 1f, properties!!)
+        }
+            .tab(ClockworkMod.BASE_CREATIVE_TABINFO)
+            .transform(ClockworkRegistrate.customRenderedItem { Supplier { HandheldSawRenderer() } })
+            .tag(ClockworkTags.AllItemTags.DISABLE_SWING_ANIMATION.tag)
+            .model(AssetLookup.itemModelWithPartials())
+            .register()
+
+    @JvmField
+    val INCOMPLETE_COMPRESSIBLE_SHAFT: ItemEntry<SequencedAssemblyItem> = sequencedIngredient("incomplete_telescoping_mechanism")
+
+    @JvmField
+    val INCOMPLETE_HOSE_SPOOL: ItemEntry<SequencedAssemblyItem> = sequencedIngredient("incomplete_hose_spool")
+
+    @JvmField
+    val TRIODE : ItemEntry<Item> = ingredient("triode")
+
+    @JvmStatic
+    private fun sequencedIngredient(name: String): ItemEntry<SequencedAssemblyItem>  {
+        return REGISTRATE.item(name, ::SequencedAssemblyItem)
+            .register();
+    }
+
+    @JvmStatic
+    private fun ingredient(name: String): ItemEntry<Item> {
+        return REGISTRATE.item(name, ::Item)
+            .register();
+    }
+
+    @JvmStatic
+    fun register() {
+        GogglesItem.addIsWearingPredicate { player -> AERONAUT_GOGGLES.isIn(player.getItemBySlot(EquipmentSlot.HEAD))  }
+    }
+}

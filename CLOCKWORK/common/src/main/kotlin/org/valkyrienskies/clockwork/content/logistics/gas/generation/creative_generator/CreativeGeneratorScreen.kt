@@ -1,0 +1,69 @@
+package org.valkyrienskies.clockwork.content.logistics.gas.generation.creative_generator
+
+import com.mojang.blaze3d.vertex.PoseStack
+import com.simibubi.create.foundation.blockEntity.behaviour.scrollValue.ScrollValueBehaviour
+import com.simibubi.create.foundation.gui.widget.ScrollInput
+import net.createmod.catnip.gui.AbstractSimiScreen
+import net.minecraft.client.gui.GuiGraphics
+import org.valkyrienskies.clockwork.ClockworkGuiTextures
+import org.valkyrienskies.clockwork.ClockworkPackets
+import org.valkyrienskies.clockwork.util.gui.ScrollingFrame
+import org.valkyrienskies.kelvin.impl.registry.GasTypeRegistry
+
+class CreativeGeneratorScreen(private val be: CreativeGeneratorBlockEntity) : AbstractSimiScreen()  {
+
+    private val background: ClockworkGuiTextures = ClockworkGuiTextures.CREATIVE_GAS_GENERATOR
+    private val frame: ClockworkGuiTextures = ClockworkGuiTextures.CREATIVE_GAS_GENERATOR_FRAME
+
+    val scrollingElements: MutableList<ScrollingFrame.ScrollingElement> = mutableListOf()
+    lateinit var scrollingFrame: CreativeGeneratorScrolling
+
+    lateinit var temperatureInput: ScrollInput
+
+    override fun init() {
+        setWindowSize(background.width, background.height)
+        super.init()
+
+        scrollingFrame = CreativeGeneratorScrolling(guiLeft+3, guiTop+16)
+        for (type in GasTypeRegistry.GAS_TYPES.values) {
+
+            val input = ScrollInput(0,0,51, 18)
+            input.calling { state: Int -> be.gasValues[type] = state }
+            input.withRange(0,8000)
+            input.withStepFunction {  c: ScrollValueBehaviour.StepContext -> if (c.control) 1000 else if (c.shift) 100 else 10  }
+            input.state = be.gasValues[type] ?: 0
+
+            scrollingElements.add(CreativeGeneratorScrolling.CreativeGeneratorScrollingElement(type, font, input))
+        }
+
+        scrollingFrame.scrollingElements = scrollingElements
+        addRenderableWidget(scrollingFrame)
+
+        temperatureInput = ScrollInput(guiLeft + 82,guiTop + 89, 51, 18)
+        temperatureInput.withRange(0,2000)
+        temperatureInput.withStepFunction {  c: ScrollValueBehaviour.StepContext -> if (c.shift) 100 else 10  }
+        temperatureInput.calling { state: Int -> be.temperature = state.toDouble() }
+        addRenderableWidget(temperatureInput)
+    }
+
+
+    override fun renderWindowBackground(ms: GuiGraphics, mouseX: Int, mouseY: Int, partialTicks: Float) {
+
+        frame.render(ms,guiLeft, guiTop)
+
+    }
+
+    override fun renderWindow(ms: GuiGraphics, mouseX: Int, mouseY: Int, partialTicks: Float) { }
+
+    override fun renderWindowForeground(ms: GuiGraphics, mouseX: Int, mouseY: Int, partialTicks: Float) {
+        background.render(ms, guiLeft, guiTop)
+
+        ms.drawString(font, "Temperature", guiLeft+8, guiTop+93,0xFFFFFF)
+        ms.drawString(font, be.temperature.toInt().toString()+" K", guiLeft+82, guiTop+93,0xFFFFFF)
+    }
+
+    override fun onClose() {
+        ClockworkPackets.sendToServer(CreativeGeneratorPacket(be.gasValues, be.temperature, be.blockPos))
+        super.onClose()
+    }
+}

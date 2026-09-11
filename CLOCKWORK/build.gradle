@@ -1,0 +1,74 @@
+plugins {
+    id 'net.fabricmc.fabric-loom-remap' version "${loom_version}"
+    id 'org.jetbrains.kotlin.jvm' version "${kotlin_version}"
+    id 'maven-publish'
+}
+
+version = project.mod_version
+group = project.maven_group
+
+base {
+    archivesName = project.archives_base_name
+}
+
+repositories {
+    mavenCentral()
+    maven { name = 'Create'; url = 'https://maven.createmod.net/' }
+    maven { name = 'Valkyrien Skies'; url = 'https://maven.valkyrienskies.org' }
+    maven { name = 'TTerrag (Flywheel, Registrate)'; url = 'https://maven.tterrag.com/' }
+    maven { name = 'BlameJared (JEI)'; url = 'https://maven.blamejared.com/' }
+    maven { name = 'Shedaniel (Cloth Config, REI)'; url = 'https://maven.shedaniel.me/' }
+    maven { name = 'SquidDev (CC:Tweaked)'; url = 'https://maven.squiddev.cc' }
+}
+
+dependencies {
+    minecraft "com.mojang:minecraft:${project.minecraft_version}"
+    mappings loom.officialMojangMappings()
+    modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+    modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+    modImplementation "net.fabricmc:fabric-language-kotlin:${project.fabric_language_kotlin_version}"
+
+    // Clockwork is an addon, not a standalone mod: without these two it has nothing
+    // to attach to. Both coordinates are unverified -- see PORTING.md before building.
+    // modImplementation "org.valkyrienskies:valkyrienskies-121-fabric:${project.vs2_version}"
+    // modImplementation "com.simibubi.create:create-fabric-${project.minecraft_version}:${project.create_fabric_version}"
+}
+
+processResources {
+    inputs.property 'version', project.version
+    filesMatching('fabric.mod.json') {
+        expand 'version': inputs.properties.version
+    }
+
+    // Apache-2.0 requires the licence and attribution to travel with anything that
+    // redistributes the covered file, so they ride inside the jar.
+    from('.') {
+        include 'LICENSE'
+        include 'CREDITS.md'
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    it.options.encoding = 'UTF-8'
+    it.options.release = 21
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21
+        freeCompilerArgs.add('-Xjvm-default=all')
+    }
+}
+
+sourceSets {
+    main {
+        kotlin { srcDirs = ['src/main/kotlin', 'src/main/java'] }
+        java { srcDirs = ['src/main/java'] }
+    }
+}
+
+java {
+    withSourcesJar()
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
+}

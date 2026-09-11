@@ -1,0 +1,102 @@
+[
+  {
+    "block": "vs_clockwork:reaction_wheel",
+    "mass": 1800,
+    "friction": 0.75
+  },
+  {
+    "block": "vs_clockwork:physics_infuser",
+    "mass": 155,
+    "friction": 0.4
+  },
+  {
+    "block": "vs_clockwork:gyro",
+    "mass": 155,
+    "friction": 0.4
+  },
+  {
+    "block": "vs_clockwork:wanderlite_deepslate_ore",
+    "mass": 1000,
+    "friction": 0.4
+  },
+  {
+    "block": "vs_clockwork:wanderlite_end_ore",
+    "mass": 1000,
+    "friction": 0.4
+  },
+  {
+    "block": "vs_clockwork:wanderlite_nyx_ore",
+    "mass": 1000,
+    "friction": 0.4
+  },
+  {
+    "block": "vs_clockwork:wanderlite_block",
+    "mass": 1000,
+    "friction": 0.4
+  },
+  {
+    "block": "vs_clockwork:smooth_wanderlite",
+    "mass": 1000,
+    "friction": 0.3
+  },
+  {
+    "block": "vs_clockwork:chiseled_wanderlite",
+    "mass": 1000,
+    "friction": 0.4
+  },
+  {
+    "block": "vs_clockwork:smooth_wanderlite_stairs",
+    "mass": 750.0,
+    "friction": 0.4
+  },
+  {
+    "block": "vs_clockwork:smooth_wanderlite_slab",
+    "mass": 500.0,
+    "friction": 0.4
+  },
+  {
+    "block": "vs_clockwork:wanderlite_bricks",
+    "mass": 1000,
+    "friction": 0.4
+  },
+  {
+    "block": "vs_clockwork:wanderglass",
+    "mass": 100,
+    "friction": 0.4
+  },
+  {
+    "block": "vs_clockwork:flap",
+    "mass": 50,
+    "friction": 0.75
+  },
+  {
+  "block": "vs_clockwork:wing",
+  "mass": 50,
+  "friction": 0.75
+  },
+  {
+    "block": "vs_clockwork:nyx",
+    "mass" : 1000.0,
+    "friction": 0.8
+  },
+  {
+    "block": "vs_clockwork:charged_nyx",
+    "mass" : 1000.0,
+    "friction": 0.8
+  },
+  {
+    "block": "vs_clockwork:cobbled_nyx",
+    "mass" : 850.0,
+    "friction": 0.8
+  },
+  {
+    "block": "vs_clockwork:balloon_casing",
+    "mass" : 10.0,
+    "friction": 0.3
+  },
+  {
+    "block": "vs_clockwork:balloon_encased_shaft",
+    "mass" : 20.0,
+    "friction": 0.4
+  }
+]

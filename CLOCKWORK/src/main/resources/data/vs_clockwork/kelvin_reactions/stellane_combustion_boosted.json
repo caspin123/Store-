@@ -1,0 +1,23 @@
+{
+  "input_gasses": {
+    "vs_clockwork:stellane": {
+      "amount": 0.002,
+      "unit": "kg"
+    },
+    "vs_clockwork:ozonite": {
+      "amount": 0.001,
+      "unit": "kg"
+    }
+  },
+  "requirements": {
+    "kelvin:min_temperature": 500,
+    "kelvin:max_temperature": 1750
+  },
+  "energy": 15000,
+  "result_gasses": {
+    "vs_clockwork:steam": {
+      "amount": 0.04,
+      "unit": "kg"
+    }
+  }
+}

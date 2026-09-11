@@ -1,0 +1,112 @@
+package org.valkyrienskies.clockwork.content.physicalities.gyro
+
+import com.simibubi.create.content.kinetics.base.KineticBlockEntity
+import net.createmod.catnip.animation.LerpedFloat
+import net.minecraft.core.BlockPos
+import net.minecraft.core.Direction
+import net.minecraft.nbt.CompoundTag
+import net.minecraft.server.level.ServerLevel
+import net.minecraft.util.Mth
+import net.minecraft.world.level.Level
+import net.minecraft.world.level.block.entity.BlockEntityType
+import net.minecraft.world.level.block.state.BlockState
+import org.joml.Vector3d
+import org.valkyrienskies.clockwork.content.physicalities.IClockworkWheelBE
+import org.valkyrienskies.core.api.ships.LoadedServerShip
+import org.valkyrienskies.mod.common.getShipObjectManagingPos
+import java.awt.Point
+
+
+class GyroBlockEntity(typeIn: BlockEntityType<*>?, pos: BlockPos, state: BlockState) :
+    KineticBlockEntity(typeIn, pos, state), IClockworkWheelBE {
+
+    var redstonePower: Point = Point(0,0)
+
+    override var visualSpeed: LerpedFloat = LerpedFloat.linear()
+    override var angle: Double = 0.0
+
+    var coreAngle = 0f
+    var previousCoreAngle = 0f
+
+    var shipUpVec: Vector3d = Vector3d(0.0,1.0,0.0)
+    private val ship: LoadedServerShip? get() = (level as ServerLevel).getShipObjectManagingPos(this.blockPos)
+    private val control: GyroShipControl? get() = ship?.getAttachment(GyroShipControl::class.java)
+
+    fun getInterpolatedCoreAngle(partialTicks: Float): Float {
+        previousCoreAngle = coreAngle
+        coreAngle++
+        if (coreAngle == 360f) {
+            coreAngle = 0f
+        }
+        return Mth.lerp(partialTicks, coreAngle, coreAngle + 4f)
+    }
+
+    override fun tick() {
+        super.tick()
+
+        if (level == null) {
+            return
+        }
+
+        updatePower(level!!, blockPos)
+
+        val up = Vector3d(0.0, 1.0, 0.0)
+        up.rotateX((redstonePower.x / 15.0) * Math.PI/2)
+        up.rotateZ((redstonePower.y / 15.0) * Math.PI/2)
+        shipUpVec = up
+
+        if (level is ServerLevel) {
+            control?.ship = ship
+            control?.speed = getSpeed()
+            control?.pointTowards(shipUpVec, 1.0f)
+        }
+
+        val targetSpeed = getSpeed()
+        visualSpeed.updateChaseTarget(targetSpeed)
+        visualSpeed.tickChaser()
+        angle += visualSpeed.value * 3 / 10f
+        angle %= 360f
+    }
+
+    /**
+     * Updates the power of the current block based on neighboring blocks' signals.
+     * Calculates the difference in power between the east and west directions (X-axis)
+     * and between the south and north directions (Z-axis) to determine the redstone power.
+     *
+     * @param worldIn The level (world) in which the block resides.
+     * @param pos The position of the current block.
+     */
+    private fun updatePower(worldIn: Level, pos: BlockPos) {
+        val powerZP = worldIn.getSignal(pos.relative(Direction.SOUTH), Direction.SOUTH)
+        val powerZN = worldIn.getSignal(pos.relative(Direction.NORTH), Direction.NORTH)
+
+        val powerXP = worldIn.getSignal(pos.relative(Direction.EAST), Direction.EAST)
+        val powerXN = worldIn.getSignal(pos.relative(Direction.WEST), Direction.WEST)
+
+        this.redstonePower = Point( powerZN - powerZP,  powerXN - powerXP)
+    }
+
+    public override fun write(compound: CompoundTag, clientPacket: Boolean) {
+        super.write(compound, clientPacket)
+        compound.putDouble("X", shipUpVec.x())
+        compound.putDouble("Y", shipUpVec.y())
+        compound.putDouble("Z", shipUpVec.z())
+
+        compound.putInt("PowerX", redstonePower.x)
+        compound.putInt("PowerZ", redstonePower.y)
+    }
+
+    public override fun read(compound: CompoundTag, clientPacket: Boolean) {
+        if (compound.contains("X")) {
+            shipUpVec = Vector3d(compound.getDouble("X"), compound.getDouble("Y"), compound.getDouble("Z"))
+        }
+        if (compound.contains("PowerX")) {
+            redstonePower = Point(compound.getInt("PowerX"), compound.getInt("PowerXZ"))
+        }
+        super.read(compound, clientPacket)
+
+        if (clientPacket) {
+            visualSpeed.chase(generatedSpeed.toDouble(), (1 / 64f).toDouble(), LerpedFloat.Chaser.EXP)
+        }
+    }
+}

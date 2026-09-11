@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "group": "astra_physics",
+  "pattern": [
+    "WWW",
+    "WGW",
+    "WSW"
+  ],
+  "key": {
+    "W": "minecraft:white_wool",
+    "G": "minecraft:glowstone_dust",
+    "S": "minecraft:string"
+  },
+  "result": {
+    "id": "astra_physics:balloon",
+    "count": 1
+  }
+}

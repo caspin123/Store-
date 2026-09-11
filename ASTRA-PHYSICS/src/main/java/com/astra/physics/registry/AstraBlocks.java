@@ -15,9 +15,11 @@ import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.material.MapColor;
 
 import com.astra.physics.AstraPhysics;
+import com.astra.physics.block.BalloonBlock;
 import com.astra.physics.block.EngineBlock;
 import com.astra.physics.block.HelmBlock;
 import com.astra.physics.block.PropellerBlock;
+import com.astra.physics.block.ReactionWheelBlock;
 import com.astra.physics.block.SailBlock;
 import com.astra.physics.block.ThrusterBlock;
 import com.astra.physics.block.WingBlock;
@@ -44,6 +46,10 @@ public final class AstraBlocks {
             metallic(MapColor.COLOR_LIGHT_GRAY, 2.5F));
     public static final Block THRUSTER = register("thruster", ThrusterBlock::new,
             metallic(MapColor.COLOR_BLACK, 4.0F));
+    public static final Block REACTION_WHEEL = register("reaction_wheel", ReactionWheelBlock::new,
+            metallic(MapColor.COLOR_CYAN, 3.5F));
+    public static final Block BALLOON = register("balloon", BalloonBlock::new,
+            canvas(MapColor.WOOL, 0.8F));
 
     /**
      * Earlier builds registered every component with a bare {@code Properties.of()}, which meant

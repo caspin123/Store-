@@ -309,6 +309,102 @@ def propeller_frame(frame):
     return model(elements)
 
 
+
+# ------------------------------------------------------------ reaction wheel
+
+REACTION_WHEEL_FRAMES = 4
+ROTOR_CENTER = (8.0, 9.0, 8.0)
+
+
+def reaction_wheel_frame(frame):
+    """A gimballed rotor in a housing.
+
+    The rotor's four arms repeat every 90 degrees, so four frames at 22.5 degree steps read as
+    one continuous spin. It turns about the vertical axis, which is the axis it applies torque
+    around, so what the player sees is what the block actually does.
+    """
+    angle = frame * 22.5
+    elements = [
+        # housing and feet
+        box((2, 0, 2), (14, 2.5, 14), "dark"),
+        box((1, 0, 1), (3.5, 4, 3.5), "brass"),
+        box((12.5, 0, 1), (15, 4, 3.5), "brass"),
+        box((1, 0, 12.5), (3.5, 4, 15), "brass"),
+        box((12.5, 0, 12.5), (15, 4, 15), "brass"),
+        # gimbal uprights
+        box((1.5, 2.5, 7), (3, 15, 9), "metal"),
+        box((13, 2.5, 7), (14.5, 15, 9), "metal"),
+        box((1.5, 14, 6), (14.5, 15.5, 10), "brass"),
+        # spindle
+        box((7, 4, 7), (9, 14, 9), "dark"),
+    ]
+
+    # outer gimbal ring, fixed
+    for index in range(8):
+        elements.append(ring_part(ROTOR_CENTER, 6.2, index * 45.0, (5.2, 1.0), 1.2,
+                                  "brass", axis="y"))
+
+    # the rotor itself, turning
+    for index in range(4):
+        elements.append(ring_part(ROTOR_CENTER, 3.4, angle + index * 90.0, (1.6, 3.8), 2.2,
+                                  "metal", axis="y"))
+    for index in range(8):
+        elements.append(ring_part(ROTOR_CENTER, 5.0, angle + index * 45.0, (4.2, 1.4), 2.6,
+                                  "metal", axis="y"))
+
+    # hub, and one marked arm so the direction of spin is readable
+    elements.append(box((6.6, 7.9, 6.6), (9.4, 10.1, 9.4), "dark"))
+    elements.append(ring_part(ROTOR_CENTER, 5.0, angle, (2.0, 1.8), 3.0, "cyan",
+                              axis="y", shade=False))
+
+    return model(elements)
+
+
+# -------------------------------------------------------------------- balloon
+
+BALLOON_FRAMES = 4
+# How far the envelope swells. Small enough that neighbouring bags, a frame apart, still touch.
+BALLOON_SWELL = 0.45
+
+
+def balloon_frame(frame):
+    """A gas envelope that breathes gently.
+
+    Built as a stack of widening then narrowing slices so it reads as a rounded bag rather than a
+    cube, with banding and a valve underneath to show which way is down.
+    """
+    swell = math.sin(frame / BALLOON_FRAMES * math.tau) * BALLOON_SWELL
+
+    # (y_bottom, y_top, inset) - a smaller inset is a wider slice.
+    slices = (
+        (1.2, 3.5, 4.0),
+        (3.5, 6.0, 2.0),
+        (6.0, 10.0, 0.6),
+        (10.0, 12.5, 2.0),
+        (12.5, 14.8, 4.0),
+    )
+
+    elements = []
+    for y0, y1, inset in slices:
+        # The widest slices swell most, as a real envelope does under pressure.
+        grow = swell * (1.0 - inset / 5.0)
+        a = max(0.0, inset - grow)
+        b = min(16.0, 16.0 - inset + grow)
+        elements.append(box((a, y0, a), (b, y1, b), "cloth"))
+
+    # banding around the middle, riding the swell
+    grow = swell
+    elements.append(box((0.4 - grow * 0.2, 7.4, 0.4 - grow * 0.2),
+                        (15.6 + grow * 0.2, 8.6, 15.6 + grow * 0.2), "brass"))
+
+    # crown and valve
+    elements.append(box((6.0, 14.8, 6.0), (10.0, 15.8, 10.0), "brass"))
+    elements.append(box((6.5, 0.0, 6.5), (9.5, 1.4, 9.5), "dark"))
+    elements.append(box((7.1, 0.4, 7.1), (8.9, 1.0, 8.9), "cyan", shade=False))
+
+    return model(elements)
+
+
 # ------------------------------------------------------------------- output
 
 def validate(name, payload):
@@ -339,15 +435,20 @@ def write_json(path, payload):
 
 
 def write_blockstate(name, frame_property, frame_count,
-                     connection_property=None, connection_count=1):
-    """One variant per facing, animation frame and connection piece."""
+                     connection_property=None, connection_count=1, facings=True):
+    """One variant per facing, animation frame and connection piece.
+
+    Some components are symmetric about the vertical axis and carry no facing at all, so they get
+    one variant per frame instead of four.
+    """
     variants = {}
-    for facing, y_rotation in FACING_ROTATIONS.items():
+    rotations = FACING_ROTATIONS if facings else {None: 0}
+    for facing, y_rotation in rotations.items():
         for frame in range(frame_count):
             for piece in range(connection_count):
-                key = f"facing={facing}"
+                key = "" if facing is None else f"facing={facing}"
                 if frame_property:
-                    key += f",{frame_property}={frame}"
+                    key += ("" if not key else ",") + f"{frame_property}={frame}"
                 if connection_property:
                     key += f",{connection_property}={piece}"
                 suffix = f"{frame}" if connection_property is None else f"{frame}_{piece}"
@@ -389,6 +490,17 @@ def main():
                        wing_frame(angle, part))
     write_blockstate("wing", "aileron", len(WING_ANGLES), "part", 4)
     generated.append(("wing", len(WING_ANGLES) * 4))
+
+    for frame in range(REACTION_WHEEL_FRAMES):
+        write_json(os.path.join(MODELS, f"reaction_wheel_{frame}.json"),
+                   reaction_wheel_frame(frame))
+    write_blockstate("reaction_wheel", "spin", REACTION_WHEEL_FRAMES, facings=False)
+    generated.append(("reaction_wheel", REACTION_WHEEL_FRAMES))
+
+    for frame in range(BALLOON_FRAMES):
+        write_json(os.path.join(MODELS, f"balloon_{frame}.json"), balloon_frame(frame))
+    write_blockstate("balloon", "swell", BALLOON_FRAMES, facings=False)
+    generated.append(("balloon", BALLOON_FRAMES))
 
     for frame in range(PROPELLER_FRAMES):
         write_json(os.path.join(MODELS, f"propeller_{frame}.json"), propeller_frame(frame))

@@ -85,6 +85,7 @@ public final class PhysicsConstruct {
     private double mass;
 
     private int helmCount, engineCount, propellerCount, sailCount, wingCount, thrusterCount;
+    private int reactionWheelCount, balloonCount;
     private double propellerThrustX, propellerThrustZ;
     private double helmForwardX, helmForwardZ;
     private double wingBalanceFactor;
@@ -258,6 +259,8 @@ public final class PhysicsConstruct {
     public int sailCount() { return sailCount; }
     public int wingCount() { return wingCount; }
     public int thrusterCount() { return thrusterCount; }
+    public int reactionWheelCount() { return reactionWheelCount; }
+    public int balloonCount() { return balloonCount; }
     /**
      * True only when the construct has an engine block AND its power is turned up.
      *
@@ -587,6 +590,7 @@ public final class PhysicsConstruct {
         minLocalX = minLocalY = minLocalZ = Integer.MAX_VALUE;
         maxLocalX = maxLocalY = maxLocalZ = Integer.MIN_VALUE;
         helmCount = engineCount = propellerCount = sailCount = wingCount = thrusterCount = 0;
+        reactionWheelCount = balloonCount = 0;
         propellerThrustX = propellerThrustZ = 0.0;
         helmForwardX = 0.0;
         helmForwardZ = 1.0;
@@ -635,6 +639,12 @@ public final class PhysicsConstruct {
                 isComponent = true;
             } else if (state.is(AstraBlocks.THRUSTER)) {
                 thrusterCount++;
+                isComponent = true;
+            } else if (state.is(AstraBlocks.REACTION_WHEEL)) {
+                reactionWheelCount++;
+                isComponent = true;
+            } else if (state.is(AstraBlocks.BALLOON)) {
+                balloonCount++;
                 isComponent = true;
             }
 
@@ -982,6 +992,13 @@ public final class PhysicsConstruct {
                 // cannot spin on the spot.
                 authority = Math.min(1.0, speed / 0.10);
             }
+            // A reaction wheel pushes against its own rotor rather than the medium, so it works
+            // at a standstill. Three of them give a hull full authority with no way on at all,
+            // which is what makes a hovering or becalmed craft steerable.
+            if (reactionWheelCount > 0 && enginesEnabled()) {
+                authority = Math.max(authority, Math.min(1.0, reactionWheelCount * 0.34) * power);
+            }
+
             double turnPower = engineMode == EngineMode.AIRCRAFT ? 0.32 : 0.24;
             yawVelocity += steer * turnPower * authority * (0.35 + 0.65 * power);
         }
@@ -999,6 +1016,10 @@ public final class PhysicsConstruct {
             vy += Math.min(0.11, climb) * helmLift;
         }
 
+        if (balloonCount > 0) {
+            applyBalloonLift(level, config, submerged);
+        }
+
         if (wingCount > 0) {
             double horizontalSpeedSq = vx * vx + vz * vz;
             double wingRatio = wingCount / Math.max(1.0, mass);
@@ -1009,6 +1030,25 @@ public final class PhysicsConstruct {
             double lift = horizontalSpeedSq * wingRatio * 4.25 * airFactor * wingBalanceFactor * modeFactor;
             vy += Math.min(0.14, lift);
         }
+    }
+
+    /**
+     * Lighter-than-air lift from gas envelopes.
+     *
+     * <p>Unlike a wing this needs no speed, so a balloon hull can take off and hover. Lift falls
+     * away with altitude the way it does for a real balloon: without that an airship would simply
+     * climb until it left the world, and with it a hull finds its own ceiling and sits there.
+     * Submerged bags are crushed and lift nothing, so a sunk airship cannot haul itself out.
+     */
+    private void applyBalloonLift(ServerLevel level, AstraConfig config, double submerged) {
+        double ceiling = config.balloonCeiling;
+        double base = level.getSeaLevel();
+        double thinning = 1.0 - Math.max(0.0, (y - base) / Math.max(1.0, ceiling - base));
+        double density = Math.max(0.0, Math.min(1.0, thinning));
+
+        double airFactor = Math.max(0.0, 1.0 - submerged);
+        double lift = balloonCount * config.balloonLiftPerBlock * density * airFactor;
+        vy += lift / Math.max(1.0, mass);
     }
 
     private void accelerateTowardHorizontalSpeed(double dirX, double dirZ, double targetSpeed, double maxAcceleration) {

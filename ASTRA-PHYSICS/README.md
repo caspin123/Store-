@@ -16,6 +16,8 @@ fly and walk around on.
 | **Sail** | Wind propulsion, no engine needed. Tiles — place a block of them for a bigger sail. | Canvas bellies in a wave travelling across the sheet |
 | **Wing** | Lift in Aircraft mode. Mount mirrored pairs facing outward. Tiles — place several in a row for a longer wing. | Aileron deflects with the pilot's steering |
 | **Thruster** | Vertical lift, strongest in Aircraft mode. | Exhaust plume grows and pulses; cold nozzle when idle |
+| **Reaction Wheel** | Turns the hull with no airflow needed — steer at a standstill. Needs engine power. | Gyroscope rotor spins while working |
+| **Balloon** | Lighter-than-air lift. No engine needed; lift thins with altitude. | Envelope breathes |
 
 Components animate from the ship's real state, not a fixed loop: a parked ship's propellers are
 still, and a thruster only burns on forward throttle.

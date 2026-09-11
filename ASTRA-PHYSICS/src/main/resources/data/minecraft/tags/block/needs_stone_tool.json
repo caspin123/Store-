@@ -4,6 +4,7 @@
     "astra_physics:engine",
     "astra_physics:propeller",
     "astra_physics:wing",
-    "astra_physics:thruster"
+    "astra_physics:thruster",
+    "astra_physics:reaction_wheel"
   ]
 }

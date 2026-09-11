@@ -15,9 +15,11 @@ ASSETS = os.path.join(ROOT, "src", "main", "resources", "assets", "astra_physics
 DATA = os.path.join(ROOT, "src", "main", "resources", "data", "astra_physics")
 MINECRAFT_TAGS = os.path.join(ROOT, "src", "main", "resources", "data", "minecraft", "tags")
 
-BLOCKS = ("helm", "engine", "propeller", "sail", "wing", "thruster")
-PICKAXE_BLOCKS = ("engine", "propeller", "wing", "thruster")
+BLOCKS = ("helm", "engine", "propeller", "sail", "wing", "thruster",
+          "reaction_wheel", "balloon")
+PICKAXE_BLOCKS = ("engine", "propeller", "wing", "thruster", "reaction_wheel")
 AXE_BLOCKS = ("helm",)
+SHEAR_BLOCKS = ("sail", "balloon")
 
 ENGLISH = {
     "itemGroup.astra_physics": "ASTRA Physics",
@@ -28,6 +30,8 @@ ENGLISH = {
     "block.astra_physics.sail": "ASTRA Sail",
     "block.astra_physics.wing": "ASTRA Wing",
     "block.astra_physics.thruster": "ASTRA Thruster",
+    "block.astra_physics.reaction_wheel": "ASTRA Reaction Wheel",
+    "block.astra_physics.balloon": "ASTRA Balloon",
 
     "message.astra_physics.prefix": "ASTRA ",
 
@@ -61,7 +65,7 @@ ENGLISH = {
     "message.astra_physics.assemble.nothing_left": "Nothing left to assemble.",
     "message.astra_physics.assemble.done":
         "Construct assembled: %s blocks, %s block entities, %s engines, %s propellers, "
-        "%s sails, %s wings, %s thrusters.",
+        "%s sails, %s wings, %s thrusters, %s reaction wheels, %s balloons.",
     "message.astra_physics.disassemble.done":
         "Construct disassembled: %s blocks placed, %s dropped as items.",
 
@@ -124,6 +128,8 @@ ARABIC = {
     "block.astra_physics.sail": "شراع ASTRA",
     "block.astra_physics.wing": "جناح ASTRA",
     "block.astra_physics.thruster": "دافع ASTRA",
+    "block.astra_physics.reaction_wheel": "عجلة رد فعل ASTRA",
+    "block.astra_physics.balloon": "منطاد ASTRA",
 
     "message.astra_physics.prefix": "ASTRA ",
 
@@ -156,7 +162,7 @@ ARABIC = {
         "تعذّر حفظ بيانات البلوك عند %s بأمان. لم يتم تغيير أي شيء.",
     "message.astra_physics.assemble.nothing_left": "لا يوجد شيء لتجميعه.",
     "message.astra_physics.assemble.done":
-        "تم تجميع المركبة: %s بلوك، %s كيان بلوك، %s محرك، %s مروحة، %s شراع، %s جناح، %s دافع.",
+        "تم تجميع المركبة: %s بلوك، %s كيان بلوك، %s محرك، %s مروحة، %s شراع، %s جناح، %s دافع، %s عجلة رد فعل، %s منطاد.",
     "message.astra_physics.disassemble.done":
         "تم تفكيك المركبة: %s بلوك أُعيد للعالم، %s سقط كأغراض.",
 
@@ -246,6 +252,11 @@ RECIPES = {
     "thruster": (["/C/", "CIC", "CBC"],
                  {"C": "minecraft:copper_ingot", "I": "minecraft:iron_ingot",
                   "B": "minecraft:blast_furnace"}),
+    "reaction_wheel": (["III", "IRI", "III"],
+                       {"I": "minecraft:iron_ingot", "R": "minecraft:redstone_block"}),
+    "balloon": (["WWW", "WGW", "WSW"],
+                {"W": "minecraft:white_wool", "G": "minecraft:glowstone_dust",
+                 "S": "minecraft:string"}),
 }
 
 WAND_RECIPE = (["/ND", "/SN", "S//"],
@@ -263,7 +274,23 @@ def shaped_recipe(result, pattern, keys, count=1):
     }
 
 
+# Blocks whose inventory icon is their own 3D model rather than a hand-drawn sprite. The
+# original components each have a painted item texture; these newer ones do not need one.
+MODEL_ITEM_BLOCKS = ("reaction_wheel", "balloon")
+
+
+def write_model_items():
+    for block in MODEL_ITEM_BLOCKS:
+        write_json(os.path.join(ASSETS, "models", "item", f"{block}.json"),
+                   {"parent": f"astra_physics:block/{block}_0"})
+        write_json(os.path.join(ASSETS, "items", f"{block}.json"),
+                   {"model": {"type": "minecraft:model",
+                              "model": f"astra_physics:item/{block}"}})
+
+
 def main():
+    write_model_items()
+    print(f"  model items: {len(MODEL_ITEM_BLOCKS)}")
     write_json(os.path.join(ASSETS, "lang", "en_us.json"), ENGLISH)
     write_json(os.path.join(ASSETS, "lang", "ar_sa.json"), ARABIC)
 
@@ -287,11 +314,15 @@ def main():
                {"replace": False, "values": [f"astra_physics:{b}" for b in PICKAXE_BLOCKS]})
     write_json(os.path.join(MINECRAFT_TAGS, "block", "mineable", "axe.json"),
                {"replace": False, "values": [f"astra_physics:{b}" for b in AXE_BLOCKS]})
+    # Fabric carries the shears tag, so cloth components break properly with shears.
+    write_json(os.path.join(ROOT, "src", "main", "resources", "data", "fabric", "tags",
+                            "block", "mineable", "shears.json"),
+               {"replace": False, "values": [f"astra_physics:{b}" for b in SHEAR_BLOCKS]})
     write_json(os.path.join(MINECRAFT_TAGS, "block", "needs_stone_tool.json"),
                {"replace": False, "values": [f"astra_physics:{b}" for b in PICKAXE_BLOCKS]})
     write_json(os.path.join(DATA, "tags", "block", "components.json"),
                {"replace": False, "values": [f"astra_physics:{b}" for b in BLOCKS]})
-    print("  tags: 4")
+    print("  tags: 5")
 
 
 if __name__ == "__main__":

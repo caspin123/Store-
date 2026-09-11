@@ -1,0 +1,16 @@
+{
+  "variants": {
+    "swell=0": {
+      "model": "astra_physics:block/balloon_0"
+    },
+    "swell=1": {
+      "model": "astra_physics:block/balloon_1"
+    },
+    "swell=2": {
+      "model": "astra_physics:block/balloon_2"
+    },
+    "swell=3": {
+      "model": "astra_physics:block/balloon_3"
+    }
+  }
+}

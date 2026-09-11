@@ -199,7 +199,9 @@ def check_animation_frames():
 
         checked += 1
         frames = int(match.group(1))
-        block = name[:-len("Block.java")].lower()
+        # ReactionWheelBlock.java -> reaction_wheel, matching the registry name. Lowercasing
+        # alone silently looked for "reactionwheel" and reported every model as missing.
+        block = re.sub(r"(?<!^)(?=[A-Z])", "_", name[:-len("Block.java")]).lower()
 
         # A connected component has a second property selecting which piece of a tiled run it
         # draws, and then needs a model for every frame and piece combination.
@@ -224,10 +226,13 @@ def check_animation_frames():
         blockstate = os.path.join(ASSETS, "blockstates", f"{block}.json")
         if os.path.exists(blockstate):
             variants = read_json(blockstate).get("variants", {})
-            expected = 4 * frames * pieces
+            # A component symmetric about the vertical axis carries no facing, so it has one
+            # variant per frame rather than four.
+            facings = 4 if any("facing=" in key for key in variants) else 1
+            expected = facings * frames * pieces
             if len(variants) != expected:
                 failures.append(f"{block}.json has {len(variants)} variants, expected {expected} "
-                                f"(4 facings x {frames} frames x {pieces} piece(s))")
+                                f"({facings} facing(s) x {frames} frames x {pieces} piece(s))")
     report(f"Animation frames ({checked} animated blocks)", failures)
 
 

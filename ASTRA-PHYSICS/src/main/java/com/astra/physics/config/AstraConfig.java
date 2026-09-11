@@ -55,6 +55,14 @@ public final class AstraConfig {
      */
     public int buoyancySampleBudget = 320;
 
+    /** Upward force one fully inflated gas envelope contributes, before mass division. */
+    public double balloonLiftPerBlock = 0.40;
+    /**
+     * Altitude at which balloon lift reaches zero. Air thins with height, so an airship finds a
+     * ceiling and holds it instead of climbing out of the world.
+     */
+    public double balloonCeiling = 256.0;
+
     public double maxMarineSpeed = 0.30;
     public double maxSailSpeed = 0.17;
     public double maxAircraftSpeed = 0.38;
@@ -136,6 +144,9 @@ public final class AstraConfig {
         airDamping = clamp(airDamping, 0.50, 1.0);
         buoyancyPerBlock = clamp(buoyancyPerBlock, 0.0, 4.0);
         buoyancySampleBudget = clamp(buoyancySampleBudget, 8, 8192);
+
+        balloonLiftPerBlock = clamp(balloonLiftPerBlock, 0.0, 4.0);
+        balloonCeiling = clamp(balloonCeiling, 0.0, 4096.0);
 
         maxMarineSpeed = clamp(maxMarineSpeed, 0.01, 4.0);
         maxSailSpeed = clamp(maxSailSpeed, 0.01, 4.0);

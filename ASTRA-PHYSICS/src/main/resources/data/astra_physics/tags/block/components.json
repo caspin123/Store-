@@ -6,6 +6,8 @@
     "astra_physics:propeller",
     "astra_physics:sail",
     "astra_physics:wing",
-    "astra_physics:thruster"
+    "astra_physics:thruster",
+    "astra_physics:reaction_wheel",
+    "astra_physics:balloon"
   ]
 }

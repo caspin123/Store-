@@ -1,5 +1,31 @@
 # Changelog
 
+## 0.3.0-alpha
+
+Two new components, both reimplemented from ideas in
+[Clockwork](https://github.com/ValkyrienSkies/Clockwork) (Apache-2.0). No code or assets were
+taken — Clockwork is an addon for Valkyrien Skies and Create, so its code calls APIs this mod does
+not have, and its textures are a different style and resolution to ASTRA's. See `CREDITS.md`.
+
+### Reaction Wheel
+
+Steering depended entirely on flow: a rudder needs water moving past it, so a moored boat could
+not turn at all and a slow aircraft turned badly. A reaction wheel spins a heavy rotor and takes
+the opposite torque into the hull, giving full turning authority at a standstill. Three of them
+turn a hull freely with no way on. It needs engine power, and the rotor is visibly spinning
+whenever it is working.
+
+### Balloon
+
+Wings only lift once a craft is already fast, which made taking off the hardest part of flying and
+left no way to hover. A balloon lifts at a standstill and needs no engine, so flight becomes
+something to build toward — add gasbags until the hull floats. Roughly one balloon per four blocks
+of hull gets a ship airborne.
+
+Lift thins with altitude, as it does for a real balloon, which gives an airship a ceiling instead
+of climbing out of the world. Submerged envelopes are crushed and lift nothing, so a sunk airship
+cannot haul itself out.
+
 ## 0.2.0-alpha
 
 Ships now turn.

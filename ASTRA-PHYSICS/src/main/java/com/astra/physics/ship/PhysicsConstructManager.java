@@ -234,7 +234,8 @@ public final class PhysicsConstructManager {
 
         AstraText.sendActionBar(player, AstraText.success("assemble.done",
                 stored.size(), blockEntityCount, construct.engineCount(), construct.propellerCount(),
-                construct.sailCount(), construct.wingCount(), construct.thrusterCount()));
+                construct.sailCount(), construct.wingCount(), construct.thrusterCount(),
+                construct.reactionWheelCount(), construct.balloonCount()));
         AstraPhysics.LOGGER.info("{} assembled ASTRA construct {} with {} blocks and {} BlockEntities in {}",
                 player.getScoreboardName(), id, stored.size(), blockEntityCount,
                 serverLevel.dimension().identifier());

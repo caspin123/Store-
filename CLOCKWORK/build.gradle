@@ -1,191 +1,74 @@
-import org.jetbrains.kotlin.gradle.tasks.KotlinJvmCompile
-
 plugins {
-    // Needed for Forge+Fabric
-    id "architectury-plugin" version "3.4.146"
-    id "dev.architectury.loom" version "1.3.355" apply false
-    // Kotlin
-    id "org.jetbrains.kotlin.jvm" version "2.0.0" apply false
-    id "io.github.juuxel.loom-vineflower" version "1.+" apply false // Quiltflower, a better decompiler
-    id "io.github.p03w.machete" version "1.+" // automatic jar compressing on build
-
-    id 'com.matthewprenger.cursegradle' version '1.4.0' apply false
-    id "com.modrinth.minotaur" version "2.4.5" apply false
+    id 'net.fabricmc.fabric-loom-remap' version "${loom_version}"
+    id 'org.jetbrains.kotlin.jvm' version "${kotlin_version}"
+    id 'maven-publish'
 }
 
-// Determine the version
-if (project.hasProperty("CustomReleaseVersion")) {
-    // Remove release/ from the version if present
-    version = project.property("CustomReleaseVersion").replaceFirst("^release/", "")
-} else {
-    String gitRevision = "git rev-parse HEAD".execute().text.trim()
-    if (gitRevision.isEmpty()) {
-        gitRevision = 'unknown'
-    }
+version = project.mod_version
+group = project.maven_group
 
-    version = mod_version + '+' + (gitRevision.length() >= 10 ? gitRevision.substring(0, 10) : gitRevision)
+base {
+    archivesName = project.archives_base_name
 }
 
-tasks.register("updateKelvin") {
-    File versionFile = null
-    File gradleProperties = file("gradle.properties")
+repositories {
+    mavenCentral()
+    maven { name = 'Create'; url = 'https://maven.createmod.net/' }
+    maven { name = 'Valkyrien Skies'; url = 'https://maven.valkyrienskies.org' }
+    maven { name = 'TTerrag (Flywheel, Registrate)'; url = 'https://maven.tterrag.com/' }
+    maven { name = 'BlameJared (JEI)'; url = 'https://maven.blamejared.com/' }
+    maven { name = 'Shedaniel (Cloth Config, REI)'; url = 'https://maven.shedaniel.me/' }
+    maven { name = 'SquidDev (CC:Tweaked)'; url = 'https://maven.squiddev.cc' }
+}
 
-    try {
-        def kelvinBuild = gradle.includedBuild("kelvin")
-        versionFile = new File(kelvinBuild.projectDir, "common/build/version.txt")
+dependencies {
+    minecraft "com.mojang:minecraft:${project.minecraft_version}"
+    mappings loom.officialMojangMappings()
+    modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+    modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+    modImplementation "net.fabricmc:fabric-language-kotlin:${project.fabric_language_kotlin_version}"
 
-        inputs.file(versionFile)
-        outputs.file(gradleProperties)
-        dependsOn(kelvinBuild.task(":common:writeVersion"))
+    // Clockwork is an addon, not a standalone mod: without these two it has nothing
+    // to attach to. Both coordinates are unverified -- see PORTING.md before building.
+    // modImplementation "org.valkyrienskies:valkyrienskies-121-fabric:${project.vs2_version}"
+    // modImplementation "com.simibubi.create:create-fabric-${project.minecraft_version}:${project.create_fabric_version}"
+}
 
-        [':common', ':fabric', ':forge'].each {
-            dependsOn(kelvinBuild.task("${it}:publishToMavenLocal"))
-        }
-    } catch (UnknownDomainObjectException ignore) {}
-
-    onlyIf {
-        versionFile != null
+processResources {
+    inputs.property 'version', project.version
+    filesMatching('fabric.mod.json') {
+        expand 'version': inputs.properties.version
     }
 
-    doLast {
-        def kelvinVersion = versionFile.text
-        def newGradleProperties = gradleProperties.text.replaceFirst("(?m)^kelvin_version=.*", "kelvin_version=" + kelvinVersion)
-        gradleProperties.write(newGradleProperties)
+    // Apache-2.0 requires the licence and attribution to travel with anything that
+    // redistributes the covered file, so they ride inside the jar.
+    from('.') {
+        include 'LICENSE'
+        include 'CREDITS.md'
     }
 }
 
-architectury {
-    minecraft = rootProject.minecraft_version
+tasks.withType(JavaCompile).configureEach {
+    it.options.encoding = 'UTF-8'
+    it.options.release = 21
 }
 
-subprojects {
-    apply plugin: "dev.architectury.loom"
-    apply plugin: "org.jetbrains.kotlin.jvm"
-
-    loom {
-        silentMojangMappingsLicense()
-    }
-
-    repositories {
-        maven { url = "https://maven.bawnorton.com/releases" }
-
-        // region JEI mavens
-        maven {
-            // location of the maven that hosts JEI files before January 2023
-            name = "Progwml6's maven"
-            url = "https://dvs1.progwml6.com/files/maven/"
-        }
-        maven {
-            // location of the maven that hosts JEI files since January 2023
-            name = "Jared's maven"
-            url = "https://maven.blamejared.com/"
-        }
-        maven {
-            // location of a maven mirror for JEI files, as a fallback
-            name = "ModMaven"
-            url = "https://modmaven.dev"
-        }
-        // endregion
-
-        mavenCentral()
-        maven {
-            name "createmod maven"
-            url "https://maven.createmod.net/"
-        }
-        maven {
-            url "https://maven.squiddev.cc"
-            content {
-                includeGroup("cc.tweaked")
-            }
-        }
-        maven { url = "https://maven.shedaniel.me/" } // Cloth Config, REI
-        maven { url = "https://maven.parchmentmc.org" } // Parchment mappings
-        maven { url = "https://maven.quiltmc.org/repository/release" } // Quilt Mappings
-        maven { // Flywheel
-            url = "https://maven.tterrag.com/"
-        }
-        maven {
-            url = "https://maven.realrobotix.me/createbigcannons/" // Create Big Cannons
-            content {
-                includeGroup "com.rbasamoyai"
-            }
-        }
-
-        maven { url = "https://raw.githubusercontent.com/Fuzss/modresources/main/maven/" }
-    }
-
-    dependencies {
-        minecraft "com.mojang:minecraft:${minecraft_version}"
-        // layered mappings - Mojmap names, parchment and QM docs and parameters
-        mappings(loom.layered {
-            it.parchment("org.parchmentmc.data:parchment-${minecraft_version}:${parchment_version}@zip")
-            it.officialMojangMappings { nameSyntheticMembers = false }
-        })
+kotlin {
+    compilerOptions {
+        jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21
+        freeCompilerArgs.add('-Xjvm-default=all')
     }
 }
 
-allprojects {
-    apply plugin: "java"
-    apply plugin: "kotlin"
-    apply plugin: "architectury-plugin"
-    apply plugin: "maven-publish"
-
-    archivesBaseName = rootProject.archives_base_name
-    version = rootProject.version
-    group = rootProject.maven_group
-
-    // Copied from VS oddities. Forces arch to use the right version (which it doesn't for some reason on some machines)
-    configurations.configureEach {
-        resolutionStrategy.force "org.lwjgl:lwjgl-stb:3.3.1"
-        resolutionStrategy.force "org.lwjgl:lwjgl-opengl:3.3.1"
-        resolutionStrategy.force "org.lwjgl:lwjgl-openal:3.3.1"
-        resolutionStrategy.force "org.lwjgl:lwjgl-tinyfd:3.3.1"
-        resolutionStrategy.force "org.lwjgl:lwjgl-jemalloc:3.3.1"
-        resolutionStrategy.force "org.lwjgl:lwjgl-glfw:3.3.1"
-        resolutionStrategy.force "org.lwjgl:lwjgl:3.3.1"
+sourceSets {
+    main {
+        kotlin { srcDirs = ['src/main/kotlin', 'src/main/java'] }
+        java { srcDirs = ['src/main/java'] }
     }
+}
 
-    repositories {
-        mavenLocal()
-        maven {
-            name = 'Kotlin for Forge'
-            url = 'https://thedarkcolour.github.io/KotlinForForge/'
-            content { includeGroup "thedarkcolour" }
-        }
-        maven {
-            name = "Valkyrien Skies Internal"
-            url = project.vs_maven_url ?: 'https://maven.valkyrienskies.org'
-            if (project.vs_maven_username && project.vs_maven_password) {
-                credentials {
-                    username = project.vs_maven_username
-                    password = project.vs_maven_password
-                }
-            }
-        }
-    }
-
-    tasks.withType(JavaCompile) {
-        options.encoding = "UTF-8"
-
-        options.release = 17
-    }
-
-    tasks.withType(KotlinJvmCompile).configureEach {
-        kotlinOptions {
-            jvmTarget = "17"
-            freeCompilerArgs += "-Xjvm-default=all"
-
-        }
-    }
-
-    java {
-        withSourcesJar()
-    }
-
-    String buildNumber = System.getenv("GITHUB_RUN_NUMBER")
-
-    machete {
-        // disable machete locally for faster builds
-        enabled = buildNumber != null
-    }
+java {
+    withSourcesJar()
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
 }
